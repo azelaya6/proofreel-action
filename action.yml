@@ -1,0 +1,80 @@
+name: ProofReel
+description: Record verified MP4 video proofs of a pull request's features and post a Video proof comment.
+author: ProofReel
+branding:
+  icon: video
+  color: purple
+inputs:
+  spec:
+    description: Spec slug to record (.proofreel/<slug>.yml or proofreel.yml). Empty records every spec.
+    required: false
+    default: ""
+  service-url:
+    description: ProofReel hosted service. Set to "" to stay local (workflow artifact + comment from the workflow token).
+    required: false
+    default: https://api.proofreel.dev
+  oidc-audience:
+    description: Audience for the GitHub Actions OIDC token. Defaults to service-url.
+    required: false
+    default: ""
+  attach-mode:
+    description: How to publish media when the service does not comment - auto, gh-attach, gif-fallback, or none.
+    required: false
+    default: auto
+  ai:
+    description: Request advisory LLM review (Pro only; never the verdict).
+    required: false
+    default: "false"
+  github-token:
+    description: Token used only for the fallback comment when the service does not post one.
+    required: false
+    default: ${{ github.token }}
+  pr:
+    description: Pull request number override.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+    - name: Install ProofReel runtime
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm ci --omit=dev --no-audit --no-fund --loglevel=error
+        echo "PROOFREEL_PW_VERSION=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_ENV"
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: proofreel-playwright-${{ runner.os }}-${{ env.PROOFREEL_PW_VERSION }}
+    - name: Install browser and media tools
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        sudo apt-get update -qq
+        npx --no-install playwright install --with-deps chromium
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg tesseract-ocr tesseract-ocr-eng xterm xvfb fonts-dejavu-core
+    - name: Record, verify, publish
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        INPUT_SPEC: ${{ inputs.spec }}
+        INPUT_SERVICE_URL: ${{ inputs.service-url }}
+        INPUT_OIDC_AUDIENCE: ${{ inputs.oidc-audience }}
+        INPUT_ATTACH_MODE: ${{ inputs.attach-mode }}
+        INPUT_AI: ${{ inputs.ai }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_PR: ${{ inputs.pr }}
+        PROOFREEL_SERVICE_URL: ${{ inputs.service-url }}
+      run: node "${{ github.action_path }}/dist/action.js"
+    - name: Upload MP4 artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: proofreel-videos
+        path: docs/videos/**
+        if-no-files-found: ignore

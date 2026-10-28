@@ -1,0 +1,50 @@
+ProofReel Action License 1.0
+
+Copyright (c) 2026 Alcides Zelaya. All rights reserved.
+
+This license covers the files in this repository (the "Software"): the
+ProofReel GitHub Action, the prebuilt ProofReel command-line tool, and their
+documentation.
+
+1. Permitted use. You may use and run the Software, unmodified, to record,
+   verify, and publish video proofs for your own repositories:
+   (a) as a GitHub Action referenced from your workflows (for example
+       `uses: azelaya6/proofreel-action@v1`), including the copies GitHub
+       makes to run and cache it; and
+   (b) as a command-line tool on machines you control.
+   You may use it with the ProofReel hosted service (https://proofreel.dev,
+   https://api.proofreel.dev), subject to that service's terms, or locally
+   without an account.
+
+2. Restrictions. You may not, and may not allow anyone else to:
+   (a) redistribute, publish, sublicense, sell, rent, lease, or otherwise make
+       the Software or any modified version of it available to third parties,
+       except that you may reference this repository from your workflows and
+       keep forks on GitHub that are used only to run it for your own
+       repositories;
+   (b) resell the Software, or offer it or its functionality to third parties
+       as part of a paid or hosted product or service;
+   (c) use the Software, or any part or derivative of it, to build, operate,
+       or train a product or service that competes with ProofReel;
+   (d) modify, decompile, or reverse engineer the Software, except as
+       applicable law expressly permits despite this restriction; or
+   (e) remove or alter any copyright, license, or attribution notice.
+
+3. Third-party components. The Software includes or installs open-source
+   components (for example commander, js-yaml, zod, and Playwright) that
+   remain under their own licenses.
+
+4. Termination. This license ends automatically if you breach it. When it
+   ends, you must stop using the Software and delete your copies.
+
+5. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+6. Limitation of liability. IN NO EVENT WILL THE COPYRIGHT HOLDER BE LIABLE
+   FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT, OR
+   OTHERWISE, ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+All rights not expressly granted are reserved.
+
+Questions or other licensing: azelaya6@gmail.com
