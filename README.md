@@ -3,14 +3,14 @@
 ProofReel records short, verified MP4 videos that prove each feature in a pull request works, and posts them to the PR as a **Video proof** comment with a player page.
 
 - **Public repositories:** free. Videos are watermarked, with up to 3 claims per spec.
-- **Private repositories:** need **ProofReel Pro**, $19/month per repository. Pro has no watermark, unlimited claims, and two-context recordings.
+- **Private repositories:** **3 free video proofs** per repository (watermarked, same limits as public), then **ProofReel Pro**, $19/month per repository. Pro has no watermark, unlimited proofs and claims, and two-context recordings.
 
 Website: https://proofreel.dev · Support: azelaya6@gmail.com
 
 ## Quick start
 
 1. **Install the GitHub App** on the repositories you want proofs for: https://github.com/apps/proofreel/installations/new
-2. **Private repositories only:** subscribe to Pro for the repository. Open this link, replacing `OWNER/REPO`, and complete checkout:
+2. **Private repositories:** the first 3 proofs are free. To keep recording after that (or to drop the watermark), subscribe to Pro for the repository. Open this link, replacing `OWNER/REPO`, and complete checkout:
    `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
 3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. A minimal example is below.
 4. **Add the workflow** below as `.github/workflows/proofreel.yml`.
@@ -136,9 +136,10 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 | --- | --- |
 | App installed, public repo | Free plan: watermarked videos, up to 3 claims per spec. The app posts or updates one **Video proof** comment, linking `https://api.proofreel.dev/proof/OWNER/REPO/PR`. |
 | App installed, private repo with Pro | Same, without the watermark or claim limit. |
-| Private repo **without** Pro | The job fails before recording with "Private repositories require ProofReel Pro" and a checkout link for that repo. |
+| Private repo **without** Pro, free proofs left | Works like the public free plan (watermarked). The comment and the **Video proof** check say "Free proof 2 of 3" with a checkout link. One successful run counts once, however many clips; failed runs and re-runs of the same commit are not charged. |
+| Private repo **without** Pro, 3 free proofs used | The job fails before recording: "ProofReel Pro required: this private repo has used its 3 free video proofs. Subscribe: &lt;checkout link&gt;". The **Video proof** check fails with the same link. Subscribing unblocks the next run immediately. |
 | App **not** installed | Videos still upload and the proof page works. The app can't comment, so the Action posts the comment itself with the workflow token (needs `pull-requests: write`). It warns you to install the app. |
-| No `id-token: write` permission | No service session and no proof page. The Action records on the free plan (watermarked, 3 claims), then posts the comment with the workflow token and uploads the MP4s as a workflow artifact. |
+| No `id-token: write` permission | Public repos: no service session and no proof page. The Action records on the free plan (watermarked, 3 claims), then posts the comment with the workflow token and uploads the MP4s as a workflow artifact. Private repos: the job fails with "ProofReel Pro required" (the service tracks private free proofs). |
 | `service-url: ""` | Same as above, by choice. Nothing is sent to ProofReel. |
 | No spec in the branch | The job fails with "No proofreel.yml or .proofreel/*.yml specs found". |
 
