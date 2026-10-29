@@ -3,7 +3,7 @@
 ProofReel records short, verified MP4 videos that prove each feature in a pull request works, and posts them to the PR as a **Video proof** comment with a player page.
 
 - **Public repositories:** free. Videos are watermarked, with up to 3 claims per spec.
-- **Private repositories:** **3 free video proofs** per repository (watermarked, same limits as public), then **ProofReel Pro**, $19/month per repository. Pro has no watermark, unlimited proofs and claims, and two-context recordings.
+- **Private repositories:** **3 free video proofs** per repository (watermarked, same limits as public), then **ProofReel Pro**, $9.99/month per repository. Pro has no watermark, unlimited proofs and claims, and two-context recordings.
 
 Website: https://proofreel.dev · Support: azelaya6@gmail.com
 
