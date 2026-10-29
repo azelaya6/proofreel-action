@@ -12,7 +12,7 @@ Website: https://proofreel.dev · Support: azelaya6@gmail.com
 1. **Install the GitHub App** on the repositories you want proofs for: https://github.com/apps/proofreel/installations/new
 2. **Private repositories:** the first 3 proofs are free. To keep recording after that (or to drop the watermark), subscribe to Pro for the repository. Open this link, replacing `OWNER/REPO`, and complete checkout:
    `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
-3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. A minimal example is below.
+3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. See [Configure ProofReel](#configure-proofreel). If the spec is missing or invalid, the job stays green and the PR comment tells you exactly what to fix.
 4. **Add the workflow** below as `.github/workflows/proofreel.yml`.
 5. **Open a pull request.** The Action records each claim and checks the key frames, then the ProofReel app comments on the PR with the videos.
 
@@ -48,7 +48,20 @@ jobs:
 
 `service-url` defaults to `https://api.proofreel.dev`, so you don't have to set it.
 
-### Minimal spec (`proofreel.yml`)
+## Configure ProofReel
+
+ProofReel reads its config from the branch the pull request comes from. There are two places, and both use the same spec format:
+
+| File | Use it for |
+| --- | --- |
+| `proofreel.yml` at the repository root | The main config: one spec for the whole repo. |
+| `.proofreel/<slug>.yml` | Per-feature config: one spec per feature or PR. Any number of files. |
+
+With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` on the Action to record only `.proofreel/<slug>.yml` (or the spec with that `slug`). Run `npx -y github:azelaya6/proofreel-action#v1 init` to write a starter `proofreel.yml`.
+
+### Main config file
+
+`proofreel.yml` at the repository root. The smallest useful spec:
 
 ```yaml
 version: 1
@@ -74,11 +87,65 @@ claims:
       at: after
 ```
 
+Required: `version: 1`, `name`, `slug`, and `claims` with at least one claim. Every claim needs `id`, `caption`, `recorder` (`browser` or `terminal`) and at least one step. All fields: [Spec reference](#spec-reference).
+
+### Per-feature config
+
+Each feature is a **claim** (one video). Put the claims for one feature in their own file, `.proofreel/<slug>.yml`. A per-feature file is a complete spec with the same fields as `proofreel.yml` (`version`, `name`, `slug`, `claims`, and `baseUrl`/`pre` for browser claims); there is no partial or inherited config. Output goes to `docs/videos/<slug>/`.
+
+```yaml
+# .proofreel/checkout.yml
+version: 1
+name: Checkout
+slug: checkout
+baseUrl: http://127.0.0.1:4173
+pre:
+  - npm run build && npm run preview -- --port 4173
+claims:
+  - id: add-to-cart
+    caption: Adding an item shows it in the cart
+    recorder: browser
+    steps:
+      - goto: /products/1
+      - click: "[data-testid=add-to-cart]"
+      - wait:
+          locator: "[data-testid=cart-count]"
+          text: "1"
+      - mark: after
+    expect:
+      text: "1 item"
+      at: after
+  - id: cli-version
+    caption: The CLI prints its version
+    recorder: terminal
+    steps:
+      - run: node cli.js --version
+      - pause: 1500
+    expect:
+      text: "1.0.0"
+```
+
+On the free plan a spec records up to 3 claims; Pro has no claim limit.
+
+### Setup errors never block a pull request
+
+If the config is missing or wrong, ProofReel does not fail the job. Nothing is recorded or charged, the job exits 0 with a warning annotation, the **Video proof** check is green ("Video proof · ProofReel setup needed"), and the ProofReel PR comment (one comment, updated in place) says what is wrong, with copy-paste instructions:
+
+| Problem | What the comment shows |
+| --- | --- |
+| No `proofreel.yml` and no `.proofreel/*.yml` | Where the main config goes, a minimal `proofreel.yml`, and the per-feature format. |
+| Invalid YAML, or a field with the wrong value | Each file and field path, for example `.proofreel/checkout.yml` → `claims[0].recorder`: must be one of 'browser', 'terminal' (got "web"), then the per-feature format. |
+| A spec with no claims | The file, and an example `claims:` list. |
+| The `spec` input names a spec that doesn't exist | The specs that do exist. |
+| The app never answers at `baseUrl` | How `pre`, `baseUrl` and `preTimeoutMs` work. |
+
+The comment comes from the ProofReel app; if the app isn't installed, the Action posts it with the workflow token (`pull-requests: write`). An internal ProofReel error (a crash in ProofReel itself, or the service being unreachable) is handled the same way: warning, exit 0, a green check and a comment saying it was not your config. Run `proofreel verify` locally to see the same errors; the CLI still exits non-zero.
+
 ## Starting the app under test
 
 ProofReel opens `baseUrl` in a headless Chromium. Something has to serve it. You have two options:
 
-- **Recommended: `pre` in the spec.** ProofReel starts each `pre` command in the background from the repository root, waits until `baseUrl` answers any HTTP request, records, then stops the commands. The wait is `preTimeoutMs` (default 120000). The run fails if every `pre` command exits before the URL answers, or if the timeout passes. Logs go to `.proofreel/tmp/pre/<slug>-N.log`.
+- **Recommended: `pre` in the spec.** ProofReel starts each `pre` command in the background from the repository root, waits until `baseUrl` answers any HTTP request, records, then stops the commands. The wait is `preTimeoutMs` (default 120000). If every `pre` command exits before the URL answers, or the timeout passes, nothing is recorded and the PR comment explains how to fix `pre` and `baseUrl` (the job stays green). Logs go to `.proofreel/tmp/pre/<slug>-N.log`.
 - **An earlier workflow step.** Start the server in the background before `uses: azelaya6/proofreel-action@v1`, for example `nohup npm run preview &`. If `baseUrl` already answers, ProofReel skips `pre`.
 
 A static site can use `pre: ["python3 -m http.server 8080 --bind 127.0.0.1"]` with `baseUrl: http://127.0.0.1:8080`.
@@ -87,7 +154,7 @@ Record against seeded or fixture data only, never production. The verifier fails
 
 ## Spec reference
 
-Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.yml`. With no `spec` input, the Action records every spec it finds. The Action fails if it finds no spec.
+Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.yml` (see [Configure ProofReel](#configure-proofreel)). With no `spec` input, the Action records every spec it finds. A missing or invalid spec never fails the job (see [Setup errors](#setup-errors-never-block-a-pull-request)).
 
 **Top-level fields**
 
@@ -143,7 +210,8 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 | App **not** installed | Videos still upload and the proof page works. The app can't comment, so the Action posts the comment itself with the workflow token (needs `pull-requests: write`). It warns you to install the app. |
 | No `id-token: write` permission | Public repos: no service session and no proof page. The Action records on the free plan (watermarked, 3 claims), then posts the comment with the workflow token and uploads the MP4s as a workflow artifact. Private repos: nothing is recorded; the job stays green with a "ProofReel Pro required" warning and the Action comments with the workflow token (the service tracks private free proofs). |
 | `service-url: ""` | Same as above, by choice. Nothing is sent to ProofReel. |
-| No spec in the branch | The job fails with "No proofreel.yml or .proofreel/*.yml specs found". |
+| No spec in the branch, an invalid spec, or a spec with no claims | Nothing is recorded or charged. The job stays green with a warning, the **Video proof** check is green ("Video proof · ProofReel setup needed"), and the PR comment has copy-paste setup instructions for the exact problem. (Action versions before 1.1.4 failed the job here.) |
+| ProofReel itself crashes | Same: warning, exit 0, green check, and a comment saying it was an internal error. |
 
 Videos are always uploaded as the `proofreel-videos` workflow artifact too.
 
