@@ -22,7 +22,7 @@ inputs:
     required: false
     default: auto
   ai:
-    description: Request advisory LLM review (Pro only; never the verdict).
+    description: Deprecated and ignored. Kept so existing workflows that set it keep working.
     required: false
     default: "false"
   github-token:
@@ -66,7 +66,6 @@ runs:
         INPUT_SERVICE_URL: ${{ inputs.service-url }}
         INPUT_OIDC_AUDIENCE: ${{ inputs.oidc-audience }}
         INPUT_ATTACH_MODE: ${{ inputs.attach-mode }}
-        INPUT_AI: ${{ inputs.ai }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_PR: ${{ inputs.pr }}
         PROOFREEL_SERVICE_URL: ${{ inputs.service-url }}
