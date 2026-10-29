@@ -83,7 +83,7 @@ ProofReel opens `baseUrl` in a headless Chromium. Something has to serve it. You
 
 A static site can use `pre: ["python3 -m http.server 8080 --bind 127.0.0.1"]` with `baseUrl: http://127.0.0.1:8080`.
 
-Record against seeded or fixture data only, never production. The verifier fails the run if a key-like secret is visible in a frame.
+Record against seeded or fixture data only, never production. The verifier fails the frame check if a key-like secret is visible in a frame, and the PR comment says so.
 
 ## Spec reference
 
@@ -137,7 +137,8 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 | App installed, public repo | Free plan: watermarked videos, up to 3 claims per spec. The app posts or updates one **Video proof** comment, linking `https://api.proofreel.dev/proof/OWNER/REPO/PR`. |
 | App installed, private repo with Pro | Same, without the watermark or claim limit. |
 | Private repo **without** Pro, free proofs left | Works like the public free plan (watermarked). The comment and the **Video proof** check say "Free proof 2 of 3" with a checkout link. One successful run counts once, however many clips; failed runs and re-runs of the same commit are not charged. |
-| Private repo **without** Pro, frame checks fail | Not charged. The comment, proof page and a failing **Video proof** check say "Frame check failed — not counted". The video is not hosted for failed free runs; download it from the workflow run's artifacts, fix the claim, and push again. |
+| Pro or public repo, frame checks fail | The video is hosted as usual. The job and the **Video proof** check stay green (never blocking merging); the PR comment says "Frame check failed" and the check title says "frame check failed". |
+| Private repo **without** Pro, frame checks fail | Not charged. The comment, proof page and the **Video proof** check (which stays green, so it never blocks merging) say "Frame check failed — not counted". The video is not hosted for failed free runs; download it from the workflow run's artifacts, fix the claim, and push again. |
 | Private repo **without** Pro, 3 free proofs used | The job fails before recording: "ProofReel Pro required: this private repo has used its 3 free video proofs. Subscribe: &lt;checkout link&gt;". The **Video proof** check fails with the same link. Subscribing unblocks the next run immediately. |
 | App **not** installed | Videos still upload and the proof page works. The app can't comment, so the Action posts the comment itself with the workflow token (needs `pull-requests: write`). It warns you to install the app. |
 | No `id-token: write` permission | Public repos: no service session and no proof page. The Action records on the free plan (watermarked, 3 claims), then posts the comment with the workflow token and uploads the MP4s as a workflow artifact. Private repos: the job fails with "ProofReel Pro required" (the service tracks private free proofs). |
