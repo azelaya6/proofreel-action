@@ -209,7 +209,8 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 | Private repo **without** Pro, 3 free proofs used | Nothing is recorded, hosted or charged, and nothing blocks the PR: the job stays green with a warning, the **Video proof** check is green ("Video proof · ProofReel Pro required"), and the PR comment asks you to subscribe with the checkout link. Subscribing unblocks the next run immediately. (Action versions before 1.1.3 failed the job here.) |
 | App **not** installed | Videos still upload and the proof page works. The app can't comment, so the Action posts the comment itself with the workflow token (needs `pull-requests: write`). It warns you to install the app. |
 | No `id-token: write` permission | Public repos: no service session and no proof page. The Action records on the free plan (watermarked, 3 claims), then posts the comment with the workflow token and uploads the MP4s as a workflow artifact. Private repos: nothing is recorded; the job stays green with a "ProofReel Pro required" warning and the Action comments with the workflow token (the service tracks private free proofs). |
-| `service-url: ""` | Same as above, by choice. Nothing is sent to ProofReel. |
+| `service-url: ""` | Same as above, by choice. Nothing is sent to ProofReel. Local-only runs always use the Free limits (watermark, 3 claims per spec), even if the repository has Pro. |
+| `service-url` pointing at a self-hosted service | Sessions work, but only entitlements signed by `https://api.proofreel.dev` remove the watermark, so recordings use the Free limits. |
 | No spec in the branch, an invalid spec, or a spec with no claims | Nothing is recorded or charged. The job stays green with a warning, the **Video proof** check is green ("Video proof · ProofReel setup needed"), and the PR comment has copy-paste setup instructions for the exact problem. (Action versions before 1.1.4 failed the job here.) |
 | ProofReel itself crashes | Same: warning, exit 0, green check, and a comment saying it was an internal error. |
 
@@ -240,7 +241,9 @@ npx -y github:azelaya6/proofreel-action#v1 verify        # OCR key frames, secre
 npx -y github:azelaya6/proofreel-action#v1 report --print
 ```
 
-The first time, run `npx -y playwright@1.64.1 install chromium`. Locally you get the free plan. Set `PROOFREEL_PLAN=pro` to try Pro features, for example in a private repo.
+The first time, run `npx -y playwright@1.64.1 install chromium`.
+
+**Local and self-hosted runs use the Free limits:** the ProofReel Free watermark and at most 3 claims per spec. Claims beyond 3 are skipped, with a message that links to Pro checkout (`https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`). This applies to the CLI on your machine, the CLI inside your own CI, and the Action with `service-url: ""`. No env var, flag or config option removes the watermark or the claim cap: unwatermarked, unlimited recordings need ProofReel Pro ($9.99/month per private repo) and run through this Action with the hosted service, which issues a short-lived signed Pro entitlement for each run.
 
 ## License
 
