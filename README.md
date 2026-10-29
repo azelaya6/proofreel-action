@@ -12,7 +12,7 @@ Website: https://proofreel.dev · Support: azelaya6@gmail.com
 1. **Install the GitHub App** on the repositories you want proofs for: https://github.com/apps/proofreel/installations/new
 2. **Private repositories:** the first 3 proofs are free. To keep recording after that (or to drop the watermark), subscribe to Pro for the repository. Open this link, replacing `OWNER/REPO`, and complete checkout:
    `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
-3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. See [Configure ProofReel](#configure-proofreel). If the spec is missing or invalid, the job stays green and the PR comment tells you exactly what to fix.
+3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. See [Configure ProofReel](#configure-proofreel). If the spec is missing or invalid, the job stays green and the PR comment tells you exactly what to fix. Only failed frame checks turn the job and the **Video proof** check red.
 4. **Add the workflow** below as `.github/workflows/proofreel.yml`.
 5. **Open a pull request.** The Action records each claim and checks the key frames, then the ProofReel app comments on the PR with the videos.
 
@@ -127,7 +127,7 @@ claims:
 
 On the free plan a spec records up to 3 claims; Pro has no claim limit.
 
-### Setup errors never block a pull request
+### Setup errors never turn the check red
 
 If the config is missing or wrong, ProofReel does not fail the job. Nothing is recorded or charged, the job exits 0 with a warning annotation, the **Video proof** check is green ("Video proof · ProofReel setup needed"), and the ProofReel PR comment (one comment, updated in place) says what is wrong, with copy-paste instructions:
 
@@ -140,6 +140,12 @@ If the config is missing or wrong, ProofReel does not fail the job. Nothing is r
 | The app never answers at `baseUrl` | How `pre`, `baseUrl` and `preTimeoutMs` work. |
 
 The comment comes from the ProofReel app; if the app isn't installed, the Action posts it with the workflow token (`pull-requests: write`). An internal ProofReel error (a crash in ProofReel itself, or the service being unreachable) is handled the same way: warning, exit 0, a green check and a comment saying it was not your config. Run `proofreel verify` locally to see the same errors; the CLI still exits non-zero.
+
+### When the check is red
+
+Failed frame checks turn the **Video proof** check red and fail the job: OCR didn't find the expected text, a key frame was black or blank, a key-like secret was visible, the video is older than the files it covers, or a claim has no video. Setup problems, the Pro limit and ProofReel errors never do. The PR comment says exactly what was missing.
+
+A red check only blocks merging if you make **Video proof** a required check in branch protection.
 
 ## Starting the app under test
 
@@ -154,7 +160,7 @@ Record against seeded or fixture data only, never production. The verifier fails
 
 ## Spec reference
 
-Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.yml` (see [Configure ProofReel](#configure-proofreel)). With no `spec` input, the Action records every spec it finds. A missing or invalid spec never fails the job (see [Setup errors](#setup-errors-never-block-a-pull-request)).
+Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.yml` (see [Configure ProofReel](#configure-proofreel)). With no `spec` input, the Action records every spec it finds. A missing or invalid spec never fails the job (see [Setup errors](#setup-errors-never-turn-the-check-red)).
 
 **Top-level fields**
 
@@ -204,15 +210,16 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 | App installed, public repo | Free plan: watermarked videos, up to 3 claims per spec. The app posts or updates one **Video proof** comment, linking `https://api.proofreel.dev/proof/OWNER/REPO/PR`. |
 | App installed, private repo with Pro | Same, without the watermark or claim limit. |
 | Private repo **without** Pro, free proofs left | Works like the public free plan (watermarked). The comment and the **Video proof** check say "Free proof 2 of 3" with a checkout link. One successful run counts once, however many clips; failed runs and re-runs of the same commit are not charged. |
-| Pro or public repo, frame checks fail | The video is hosted as usual. The job and the **Video proof** check stay green (never blocking merging); the PR comment says "Frame check failed" and the check title says "frame check failed". |
-| Private repo **without** Pro, frame checks fail | Not charged. The comment, proof page and the **Video proof** check (which stays green, so it never blocks merging) say "Frame check failed — not counted". The video is not hosted for failed free runs; download it from the workflow run's artifacts, fix the claim, and push again. |
-| Private repo **without** Pro, 3 free proofs used | Nothing is recorded, hosted or charged, and nothing blocks the PR: the job stays green with a warning, the **Video proof** check is green ("Video proof · ProofReel Pro required"), and the PR comment asks you to subscribe with the checkout link. Subscribing unblocks the next run immediately. (Action versions before 1.1.3 failed the job here.) |
+| Pro or public repo, frame checks fail | The video is hosted as usual. The **Video proof** check is red and the job fails (Action 1.1.7+); the PR comment says "Frame check failed" with what was missing, and the check title says "frame check failed". |
+| Private repo **without** Pro, frame checks fail | Not charged. The **Video proof** check is red and the job fails. The comment, proof page and check say "Frame check failed — not counted". The video is not hosted for failed free runs; download it from the workflow run's artifacts, fix the claim, and push again. |
+| Private repo **without** Pro, 3 free proofs used | Nothing is recorded, hosted or charged, and nothing turns red: the job stays green with a warning, the **Video proof** check is green ("Video proof · ProofReel Pro required"), and the PR comment asks you to subscribe with the checkout link. Subscribing unblocks the next run immediately. (Action versions before 1.1.3 failed the job here.) |
 | App **not** installed | Videos still upload and the proof page works. The app can't comment, so the Action posts the comment itself with the workflow token (needs `pull-requests: write`). It warns you to install the app. |
 | No `id-token: write` permission | Public repos: no service session and no proof page. The Action records on the free plan (watermarked, 3 claims), then posts the comment with the workflow token and uploads the MP4s as a workflow artifact. Private repos: nothing is recorded; the job stays green with a "ProofReel Pro required" warning and the Action comments with the workflow token (the service tracks private free proofs). |
 | `service-url: ""` | Same as above, by choice. Nothing is sent to ProofReel. Local-only runs always use the Free limits (watermark, 3 claims per spec), even if the repository has Pro. |
 | `service-url` pointing at a self-hosted service | Sessions work, but only entitlements signed by `https://api.proofreel.dev` remove the watermark, so recordings use the Free limits. |
 | No spec in the branch, an invalid spec, or a spec with no claims | Nothing is recorded or charged. The job stays green with a warning, the **Video proof** check is green ("Video proof · ProofReel setup needed"), and the PR comment has copy-paste setup instructions for the exact problem. (Action versions before 1.1.4 failed the job here.) |
-| ProofReel itself crashes | Same: warning, exit 0, green check, and a comment saying it was an internal error. |
+| ProofReel itself crashes, or the service is down | Same: warning, exit 0, green check, and a comment saying it was an internal error. |
+| Free plan records 3 claims and skips the rest | Green (if the 3 recorded claims pass). The comment lists the skipped claims under "Skipped" with the Pro link; a skipped claim is not a frame-check failure. |
 
 Videos are always uploaded as the `proofreel-videos` workflow artifact too.
 
