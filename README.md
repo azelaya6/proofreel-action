@@ -3,15 +3,18 @@
 ProofReel records short, verified MP4 videos that prove each feature in a pull request works, and posts them to the PR as a **Video proof** comment with a player page.
 
 - **Public repositories:** free. Videos are watermarked, with up to 3 claims per spec.
-- **Private repositories:** **3 free video proofs** per repository (watermarked, same limits as public), then **ProofReel Pro**, $9.99/month per repository. Pro has no watermark, unlimited proofs and claims, and two-context recordings.
+- **Private repositories:** **3 free video proofs** per repository (watermarked, same limits as public), then **ProofReel Pro** — **$9.99/month per repository**, or **ProofReel Pro Org at $69.99/month** for every private repo in a GitHub organization. Pro has no watermark, unlimited proofs and claims, and two-context recordings.
 
 Website: https://proofreel.dev · Support: azelaya6@gmail.com
 
 ## Quick start
 
 1. **Install the GitHub App** on the repositories you want proofs for: https://github.com/apps/proofreel/installations/new
-2. **Private repositories:** the first 3 proofs are free. To keep recording after that (or to drop the watermark), subscribe to Pro for the repository. Open this link, replacing `OWNER/REPO`, and complete checkout:
-   `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
+2. **Private repositories:** the first 3 proofs are free. To keep recording after that (or to drop the watermark), subscribe to Pro:
+   - **One repository** ($9.99/month): open this link, replace `OWNER/REPO`, and complete checkout:
+     `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
+   - **Whole GitHub organization** ($69.99/month, every private repo under the org): org admin required; App installed on the org:
+     `https://api.proofreel.dev/billing/checkout?scopeKind=org&scopeId=ORG`
 3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. See [Configure ProofReel](#configure-proofreel). If the spec is missing or invalid, the job stays green and the PR comment tells you exactly what to fix. Only failed frame checks turn the job and the **Video proof** check red.
 4. **Add the workflow** below as `.github/workflows/proofreel.yml`.
 5. **Open a pull request.** The Action records each claim and checks the key frames, then the ProofReel app comments on the PR with the videos.
@@ -253,7 +256,10 @@ The first time, run `npx -y playwright@1.64.1 install chromium`.
 **Sign in first.** Recording needs a short-lived pass signed by the ProofReel service. Run `npx -y github:azelaya6/proofreel-action#v1 login` once: it shows a code to enter at https://github.com/login/device and stores your credentials in `~/.config/proofreel/credentials` (mode 600). `whoami` shows the account and `logout` removes it.
 
 - **Public repos** you can push to record on the Free tier: the ProofReel Free watermark and at most 3 claims per spec. Claims beyond 3 are skipped, with a message that links to Pro checkout.
-- **Private repos** need ProofReel Pro ($9.99/month per private repo): `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`. With Pro there is no watermark and no claim cap, on your laptop too.
+- **Private repos** need ProofReel Pro after the 3 free proofs:
+  - **Per repository** ($9.99/month): `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
+  - **Per GitHub organization** ($69.99/month, all private repos in the org): `https://api.proofreel.dev/billing/checkout?scopeKind=org&scopeId=ORG`
+  With Pro (repo or org) there is no watermark and no claim cap, on your laptop too.
 - Without a pass (not signed in, no push access, private repo without Pro) nothing is recorded and the CLI says what to do. `verify` and `report` need no account. No env var, flag or config option unlocks recording or removes the watermark.
 
 ## License
