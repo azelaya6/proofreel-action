@@ -1,0 +1,15 @@
+#!/bin/sh
+# Remove Cursor Agent attribution from commit messages (brand policy).
+set -eu
+
+MSG_FILE="${1:?commit-msg hook requires message file path}"
+[ -f "$MSG_FILE" ] || exit 0
+
+# Portable in-place edit (GNU sed)
+sed -i \
+  -e '/^[Cc]o-[Aa]uthored-by:.*[Cc]ursor [Aa]gent/d' \
+  -e '/^[Cc]o-[Aa]uthored-by:.*cursoragent@cursor\.com/d' \
+  -e '/^[Mm]ade-with:[[:space:]]*Cursor/d' \
+  "$MSG_FILE"
+
+exit 0
