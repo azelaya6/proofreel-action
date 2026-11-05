@@ -62,7 +62,7 @@ ProofReel reads its config from the branch the pull request comes from. There ar
 | `proofreel.yml` at the repository root | The main config: one spec for the whole repo. |
 | `.proofreel/<slug>.yml` | Per-feature config: one spec per feature or PR. Any number of files. |
 
-With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` on the Action to record only `.proofreel/<slug>.yml` (or the spec with that `slug`). Run `npx -y github:azelaya6/proofreel-action#v1 init` to write a starter `proofreel.yml`.
+With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` on the Action to record only `.proofreel/<slug>.yml` (or the spec with that `slug`). Run `npx -y github:azelaya6/proofreel-action#v1 init` to write a stack-aware starter `proofreel.yml` and `.github/workflows/proofreel.yml` (detects Vite, Next.js, or a generic Node dev server from `package.json`).
 
 ### Main config file
 
@@ -268,7 +268,7 @@ Needs Node 22+, ffmpeg, and tesseract on `PATH`. **Linux:** also install xvfb, x
 
 ```bash
 npx -y github:azelaya6/proofreel-action#v1 login         # GitHub sign-in (device flow), once per machine
-npx -y github:azelaya6/proofreel-action#v1 init          # writes proofreel.yml and .gitignore entries
+npx -y github:azelaya6/proofreel-action#v1 init          # stack-aware proofreel.yml + workflow + gitignore
 npx -y github:azelaya6/proofreel-action#v1 record        # docs/videos/<slug>/NN-*.mp4
 npx -y github:azelaya6/proofreel-action#v1 verify        # OCR key frames, secret and black-frame checks
 npx -y github:azelaya6/proofreel-action#v1 report --print

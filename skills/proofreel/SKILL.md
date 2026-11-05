@@ -127,7 +127,7 @@ From the repository root (Node 22+, system deps on Linux — see README):
 
 ```bash
 npx -y github:azelaya6/proofreel-action#v1 login   # once per machine
-npx -y github:azelaya6/proofreel-action#v1 init
+npx -y github:azelaya6/proofreel-action#v1 init    # stack-aware proofreel.yml + .github/workflows/proofreel.yml
 npx -y github:azelaya6/proofreel-action#v1 record
 npx -y github:azelaya6/proofreel-action#v1 verify
 ```
