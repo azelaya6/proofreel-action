@@ -9,10 +9,32 @@ Website: https://proofreel.dev · Support: support@proofreel.dev
 
 ## For AI coding agents
 
-Coding agents (Cursor, Claude Code, Codex, and others) can install the **ProofReel** skill so they know how to add `proofreel.yml`, `.proofreel/*.yml`, and `.github/workflows/proofreel.yml`.
+Any coding agent that supports **Agent Skills** (a `SKILL.md` with YAML front matter) can use the **ProofReel** skill to add or fix `proofreel.yml`, `.proofreel/*.yml`, and `.github/workflows/proofreel.yml`.
 
-- **Skill file:** [.cursor/skills/proofreel/SKILL.md](.cursor/skills/proofreel/SKILL.md) (same content at [skills/proofreel/SKILL.md](skills/proofreel/SKILL.md))
-- **Use:** Add that skill to your agent (for example, copy it into your project’s `.cursor/skills/` or point the agent at the raw file on your default branch: `https://raw.githubusercontent.com/azelaya6/proofreel-action/main/.cursor/skills/proofreel/SKILL.md`)
+**Canonical skill:** [skills/proofreel/SKILL.md](skills/proofreel/SKILL.md)
+
+Raw URL (default branch `main`):
+
+`https://raw.githubusercontent.com/azelaya6/proofreel-action/main/skills/proofreel/SKILL.md`
+
+### Install options
+
+| Agent / harness | Skill path in your repo |
+| --- | --- |
+| Claude Code | `.claude/skills/proofreel/SKILL.md` |
+| Codex, ChatGPT, and other shared layouts | `.agents/skills/proofreel/SKILL.md` |
+| Cursor | `.cursor/skills/proofreel/SKILL.md` |
+| OpenCode | `.claude/skills/…`, `.agents/skills/…`, or `.opencode/skills/proofreel/SKILL.md` |
+
+In **this** repository, the harness paths above are symlinks to `skills/proofreel/SKILL.md` so there is one file to edit. In **your** project, either symlink or copy the canonical file into the folder your tool reads.
+
+If your tooling supports the [skills CLI](https://github.com/vercel-labs/skills), you can install from GitHub:
+
+```bash
+npx skills add azelaya6/proofreel-action
+```
+
+That expects a real `skills/proofreel/SKILL.md` in the repo (not a symlink to another path).
 
 ## Quick start
 
