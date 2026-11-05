@@ -7,34 +7,7 @@ ProofReel records short, verified MP4 videos that prove each feature in a pull r
 
 Website: https://proofreel.dev · Support: support@proofreel.dev
 
-## For AI coding agents
-
-Any coding agent that supports **Agent Skills** (a `SKILL.md` with YAML front matter) can use the **ProofReel** skill to add or fix `proofreel.yml`, `.proofreel/*.yml`, and `.github/workflows/proofreel.yml`.
-
-**Canonical skill:** [skills/proofreel/SKILL.md](skills/proofreel/SKILL.md)
-
-Raw URL (default branch `main`):
-
-`https://raw.githubusercontent.com/azelaya6/proofreel-action/main/skills/proofreel/SKILL.md`
-
-### Install options
-
-| Agent / harness | Skill path in your repo |
-| --- | --- |
-| Claude Code | `.claude/skills/proofreel/SKILL.md` |
-| Codex, ChatGPT, and other shared layouts | `.agents/skills/proofreel/SKILL.md` |
-| Cursor | `.cursor/skills/proofreel/SKILL.md` |
-| OpenCode | `.claude/skills/…`, `.agents/skills/…`, or `.opencode/skills/proofreel/SKILL.md` |
-
-In **this** repository, the harness paths above are symlinks to `skills/proofreel/SKILL.md` so there is one file to edit. In **your** project, either symlink or copy the canonical file into the folder your tool reads.
-
-If your tooling supports the [skills CLI](https://github.com/vercel-labs/skills), you can install from GitHub:
-
-```bash
-npx skills add azelaya6/proofreel-action
-```
-
-That expects a real `skills/proofreel/SKILL.md` in the repo (not a symlink to another path).
+This repository publishes the prebuilt GitHub Action and CLI. Development happens in the private ProofReel product repo; maintainers cut releases here. For bugs or feature requests, please [open an issue](https://github.com/azelaya6/proofreel-action/issues) rather than an unfinished pull request.
 
 ## Quick start
 
@@ -231,6 +204,8 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 
 **Steps (browser):** `goto: /path`, `click: <selector>`, `fill: {locator, text}`, `type: {locator, text}` (types each key), `press: Enter` (optional `locator`), `hover: <selector>`, `wait: <selector>` or `wait: {locator, text, url, timeoutMs}`, `assert: {text, locator}`, `pause: <ms>` (max 12000), `mark: before|action|after`.
 
+`wait.url` accepts an absolute `http(s)` URL, a Playwright glob (`**/dashboard`), or a **path-only / relative** value such as `/dashboard`. Path-only values resolve against the claim/spec `baseUrl` origin and match that pathname (query/hash ignored), so `wait: { url: /dashboard }` succeeds after navigation to `{baseUrl}/dashboard`.
+
 **Steps (terminal):** `run: <command>`, `env: {KEY: value}`, `pause: <ms>`, `mark: ...`.
 
 If you don't add `mark` steps, the key frames are set automatically: `before` after the first `goto`, `action` at the first click or fill, and `after` at the end.
@@ -266,11 +241,30 @@ Videos are always uploaded as the `proofreel-videos` workflow artifact too.
 | `github-token` | `${{ github.token }}` | Used only for the fallback comment. |
 | `pr` | from event | Pull request number override. |
 
-The Action runs on `ubuntu-latest`. It installs Chromium (cached between runs), ffmpeg, tesseract, xvfb, and DejaVu fonts.
+The Action runs on **Linux or macOS** GitHub Actions runners. You choose `runs-on` in your workflow.
+
+## Runners
+
+| Runner | `runs-on` example | System deps |
+| --- | --- | --- |
+| GitHub-hosted Linux (default) | `ubuntu-latest` | Installed by the Action via `apt` (ffmpeg, tesseract, xvfb, xterm, DejaVu fonts). Playwright Chromium is cached under `~/.cache/ms-playwright`. |
+| Self-hosted or GitHub-hosted macOS | Your labels, e.g. `[self-hosted, macOS, ARM64, proofreel]` | When **Homebrew** is on the runner, the Action runs `brew install ffmpeg tesseract` automatically if either tool is missing. Optional for terminal fallback rendering: `brew install --cask font-dejavu`. If Homebrew is not installed, the job fails and the PR comment explains how to install Homebrew and the packages. The Action does **not** run `apt` on macOS. |
+
+Optional workflow env **`PROOFREEL_INSTALL_DEPS=0`** (or `false`): skip automatic Homebrew installs on macOS and fail when `ffmpeg` or `tesseract` is missing (for locked-down runners). Default is automatic install when Homebrew is available.
+
+**Browser claims** (`recorder: browser`) work on both Linux and macOS — Playwright records headless Chromium with no Xvfb.
+
+**Terminal claims** (`recorder: terminal`): on Linux, the Action's xvfb + xterm path captures a real terminal when available. On **macOS**, Xvfb is not available (Linux-only); ProofReel falls back to running your steps and rendering the log with ffmpeg (needs ffmpeg + a readable font). Live xterm capture on Mac would require XQuartz and is not supported out of the box — use browser claims or a Linux runner for full terminal capture.
+
+```yaml
+jobs:
+  video-proof:
+    runs-on: ubuntu-latest   # or your self-hosted macOS labels
+```
 
 ## Running the CLI locally
 
-Needs Node 22+, ffmpeg, tesseract-ocr, xvfb, xterm, and fonts-dejavu-core. On Debian or Ubuntu: `sudo apt-get install -y ffmpeg tesseract-ocr tesseract-ocr-eng xterm xvfb fonts-dejavu-core`.
+Needs Node 22+, ffmpeg, and tesseract on `PATH`. **Linux:** also install xvfb, xterm, and DejaVu fonts for terminal recording — `sudo apt-get install -y ffmpeg tesseract-ocr tesseract-ocr-eng xterm xvfb fonts-dejavu-core`. **macOS:** `brew install ffmpeg tesseract` and optionally `brew install --cask font-dejavu`.
 
 ```bash
 npx -y github:azelaya6/proofreel-action#v1 login         # GitHub sign-in (device flow), once per machine
