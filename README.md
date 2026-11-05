@@ -7,6 +7,13 @@ ProofReel records short, verified MP4 videos that prove each feature in a pull r
 
 Website: https://proofreel.dev · Support: support@proofreel.dev
 
+## For AI coding agents
+
+Coding agents (Cursor, Claude Code, Codex, and others) can install the **ProofReel** skill so they know how to add `proofreel.yml`, `.proofreel/*.yml`, and `.github/workflows/proofreel.yml`.
+
+- **Skill file:** [.cursor/skills/proofreel/SKILL.md](.cursor/skills/proofreel/SKILL.md) (same content at [skills/proofreel/SKILL.md](skills/proofreel/SKILL.md))
+- **Use:** Add that skill to your agent (for example, copy it into your project’s `.cursor/skills/` or point the agent at the raw file on your default branch: `https://raw.githubusercontent.com/azelaya6/proofreel-action/main/.cursor/skills/proofreel/SKILL.md`)
+
 ## Quick start
 
 1. **Install the GitHub App** on the repositories you want proofs for: https://github.com/apps/proofreel/installations/new
