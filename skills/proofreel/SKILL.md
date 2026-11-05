@@ -1,0 +1,1 @@
+../../.cursor/skills/proofreel/SKILL.md
