@@ -9,6 +9,18 @@ Website: https://proofreel.dev · Support: support@proofreel.dev
 
 This repository publishes the prebuilt GitHub Action and CLI. Development happens in the private ProofReel product repo; maintainers cut releases here. For bugs or feature requests, please [open an issue](https://github.com/azelaya6/proofreel-action/issues) rather than an unfinished pull request.
 
+## GitHub Marketplace
+
+Browse and install from **[ProofReel on GitHub Marketplace](https://github.com/marketplace/actions/proofreel)** (once the maintainer has published the first GitHub Release with Marketplace enabled). **Install it** adds the workflow snippet to your repository.
+
+You can also reference the Action directly — no Marketplace install required:
+
+```yaml
+- uses: azelaya6/proofreel-action@v1
+```
+
+Install the [ProofReel GitHub App](https://github.com/apps/proofreel/installations/new) on the repositories where you want PR video proofs.
+
 ## Quick start
 
 1. **Install the GitHub App** on the repositories you want proofs for: https://github.com/apps/proofreel/installations/new
