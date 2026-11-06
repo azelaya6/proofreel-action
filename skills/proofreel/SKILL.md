@@ -56,9 +56,11 @@ jobs:
       - run: npm ci
 
       - uses: azelaya6/proofreel-action@v1
+        with:
+          spec: auto
 ```
 
-`service-url` defaults to `https://api.proofreel.dev`; leave it unset unless documenting it explicitly.
+`spec: auto` records specs whose `paths:` globs match the pull request diff. Use a separate scheduled workflow with `spec: ""` to record every spec without running the full suite on each push.
 
 ## Spec shape
 
@@ -105,7 +107,9 @@ claims:
 
 Terminal claims use `run`, `pause`, and `expect.text` on terminal output instead of `goto`/`click`.
 
-With no `spec` input, the Action records every spec it finds. Set `spec: <slug>` on the Action step to record only `.proofreel/<slug>.yml`.
+Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks a small smoke spec when auto matches nothing else.
+
+With no `spec` input, the Action records every spec. Use `spec: <slug>`, `spec: a,b`, or `spec: auto` on the Action step.
 
 Full field and step reference: [ProofReel Action README](https://github.com/azelaya6/proofreel-action) (Spec reference section).
 

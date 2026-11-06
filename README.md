@@ -74,7 +74,7 @@ ProofReel reads its config from the branch the pull request comes from. There ar
 | `proofreel.yml` at the repository root | The main config: one spec for the whole repo. |
 | `.proofreel/<slug>.yml` | Per-feature config: one spec per feature or PR. Any number of files. |
 
-With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` on the Action to record only `.proofreel/<slug>.yml` (or the spec with that `slug`). Run `npx -y github:azelaya6/proofreel-action#v1 init` to write a stack-aware starter `proofreel.yml` and `.github/workflows/proofreel.yml` (detects Vite, Next.js, or a generic Node dev server from `package.json`).
+With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` for one spec, `spec: slug-a,slug-b` for several, or `spec: auto` to record specs when the pull request touches a path listed in that spec's **`paths:`** globs (or edits that spec's file under `.proofreel/`). Specs without `paths:` are not selected by globs alone. When `auto` matches nothing, ProofReel records specs you edited under `.proofreel/`, then specs marked `always: true`, otherwise it passes without recording (see [Action inputs](#action-inputs)). Run a full suite on a schedule with an empty `spec` input instead of on every push.
 
 ### Main config file
 
@@ -194,6 +194,8 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `defaults.pauseMs` | no | Pause after every step, so viewers can follow. |
 | `defaults.recorder` | no | `browser` or `terminal`. |
 | `seed.description`, `seed.files` | no | Documents the fixture data a recording relies on. |
+| `paths` | no | Repo-relative globs. With `spec: auto`, the Action records this spec when the PR touches any matching path (or this spec file). |
+| `always` | no | With `spec: auto`, record this spec when nothing else matched (smoke set). |
 | `claims` | yes | One or more claims, one video each. |
 | `notProven` | no | Things a headless recording can't prove. They're listed in the comment. |
 | `honesty` | no | A sentence shown under the videos. |
@@ -242,11 +244,13 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 
 Videos are always uploaded as the `proofreel-videos` workflow artifact too.
 
+**Tip:** On pull requests use `spec: auto` so only affected specs record. Add a second workflow on `schedule` or `workflow_dispatch` with `spec: ""` to re-prove the full suite without queueing every spec on each push.
+
 ## Inputs
 
 | Input | Default | Meaning |
 | --- | --- | --- |
-| `spec` | `""` (all) | Record only this spec slug. |
+| `spec` | `""` (all) | `""` records every spec. One slug records that spec. Comma-separated slugs record that list. `auto` picks specs from the PR diff using each spec's `paths:` (see above). |
 | `service-url` | `https://api.proofreel.dev` | Hosted service. It signs the recording pass for each run; without it nothing is recorded. |
 | `oidc-audience` | service-url | OIDC audience. Leave it unset. |
 | `attach-mode` | `auto` | Fallback comment media: `auto`, `gh-attach`, `gif-fallback`, `none`. |

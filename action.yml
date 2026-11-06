@@ -6,7 +6,7 @@ branding:
   color: purple
 inputs:
   spec:
-    description: Spec slug to record (.proofreel/<slug>.yml or proofreel.yml). Empty records every spec.
+    description: Spec slug(s) to record. Empty records every spec. Comma-separated slugs record that list. `auto` picks specs from the PR diff (see paths on each spec).
     required: false
     default: ""
   service-url:

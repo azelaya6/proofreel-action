@@ -57,12 +57,40 @@ brew_install_missing() {
 
 macos_collect_missing() {
   local -a out=()
+  if [[ -n "${PROOFREEL_TEST_FORCE_MISSING_TOOLS:-}" ]]; then
+    local item
+    local IFS=,
+    for item in $PROOFREEL_TEST_FORCE_MISSING_TOOLS; do
+      [[ -n "$item" ]] && out+=("$item")
+    done
+    if [[ ${#out[@]} -gt 0 ]]; then
+      printf '%s\n' "${out[@]}"
+    fi
+    return
+  fi
   local cmd
   for cmd in ffmpeg tesseract; do
     need_cmd "$cmd" || out+=("$cmd")
   done
   if [[ ${#out[@]} -gt 0 ]]; then
     printf '%s\n' "${out[@]}"
+  fi
+}
+
+ensure_macos_ffmpeg_drawtext() {
+  if need_cmd ffmpeg && ffmpeg -hide_banner -filters 2>/dev/null | grep -q ' drawtext '; then
+    return 0
+  fi
+  if ! need_cmd brew; then
+    return 0
+  fi
+  echo "ProofReel: ffmpeg on PATH lacks drawtext; installing ffmpeg-full via Homebrew…"
+  brew list ffmpeg-full &>/dev/null || brew install ffmpeg-full
+  local prefix
+  prefix="$(brew --prefix ffmpeg-full)"
+  export PATH="${prefix}/bin:${PATH}"
+  if [[ -n "${GITHUB_ENV:-}" ]]; then
+    echo "PATH=${prefix}/bin:${PATH}" >> "$GITHUB_ENV"
   fi
 }
 
@@ -74,6 +102,7 @@ macos_install() {
   done < <(macos_collect_missing)
 
   if [[ ${#missing[@]} -eq 0 ]]; then
+    ensure_macos_ffmpeg_drawtext
     playwright_install
     return
   fi
@@ -90,6 +119,11 @@ macos_install() {
     done < <(macos_collect_missing)
     if [[ ${#missing[@]} -gt 0 ]]; then
       echo "::error::Homebrew install finished but tools are still missing on PATH: ${missing[*]}"
+      exit 1
+    fi
+    ensure_macos_ffmpeg_drawtext
+    if need_cmd ffmpeg && ! ffmpeg -hide_banner -filters 2>/dev/null | grep -q ' drawtext '; then
+      echo "::error::ffmpeg on PATH does not include drawtext. On macOS run: brew install ffmpeg-full"
       exit 1
     fi
     playwright_install
