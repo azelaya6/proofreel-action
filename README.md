@@ -42,7 +42,7 @@ on:
   pull_request:
 
 permissions:
-  id-token: write       # lets the Action prove which repo it runs in (OIDC); no secrets needed
+  id-token: write       # lets the Action prove which repo it runs in (OIDC); no secrets needed. Also signs error reports (see Error telemetry)
   contents: read
   pull-requests: write  # only used for the fallback comment if the app is not installed
 
@@ -256,6 +256,25 @@ Videos are always uploaded as the `proofreel-videos` workflow artifact too.
 | `attach-mode` | `auto` | Fallback comment media: `auto`, `gh-attach`, `gif-fallback`, `none`. |
 | `github-token` | `${{ github.token }}` | Used only for the fallback comment. |
 | `pr` | from event | Pull request number override. |
+| `telemetry` | `true` | Send a scrubbed error report to ProofReel when the Action hits an internal error, a setup problem or a failed upload. `false` opts out. See [Error telemetry](#error-telemetry). |
+
+## Error telemetry
+
+When the Action itself fails in your repository (an internal error, a setup problem such as a missing or invalid spec, or a failed upload), it sends **one small JSON report** to `https://api.proofreel.dev/v1/telemetry/action-error` so we can find and fix ProofReel bugs without you filing an issue. It is **on by default** and never changes your job's result.
+
+- **What is sent:** repository name, workflow run id and attempt, Action version, the stage that failed (`setup`, `session`, `record`, `verify`, `upload`, `publish`, `comment`, `internal`), the error class (or setup-problem kind), the first line of the error message (scrubbed, at most 300 characters), and the runner OS/arch.
+- **What is never sent:** secrets, environment variables, tokens, URL query strings or fragments, file or spec contents, stack traces, or your home directory name. The message is scrubbed on the runner with the same secret masks the Action uses for logs, and scrubbed again by the service.
+- **How it is authenticated:** with a short-lived GitHub Actions OIDC token (audience `proofreel-telemetry`), so it needs the same `permissions: id-token: write` the Action already uses. There is no API key or DSN in the Action. Without the permission the Action logs one line and sends nothing.
+- **Fire and forget:** short timeouts (a few seconds); a failed or slow report is ignored.
+- **Opt out:** set the input `telemetry: false` (or the env `PROOFREEL_TELEMETRY=0`). `service-url: ""` also sends nothing.
+
+```yaml
+      - uses: azelaya6/proofreel-action@v1
+        with:
+          telemetry: false   # opt out of error reports
+```
+
+Reports are kept for 90 days and rate-limited per repository. Questions: support@proofreel.dev.
 
 The Action runs on **Linux or macOS** GitHub Actions runners. You choose `runs-on` in your workflow.
 

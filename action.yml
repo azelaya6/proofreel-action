@@ -33,6 +33,10 @@ inputs:
     description: Pull request number override.
     required: false
     default: ""
+  telemetry:
+    description: 'Send a small scrubbed error report (stage, error class, truncated message, repo, run id, Action version, runner OS) to the ProofReel service when the Action hits an internal error, a setup problem or a failed upload. Uses the workflow''s OIDC token (`id-token: write`); no secrets, env, tokens, URL query strings or file contents. Set to "false" to opt out.'
+    required: false
+    default: "true"
 runs:
   using: composite
   steps:
@@ -68,6 +72,7 @@ runs:
         INPUT_ATTACH_MODE: ${{ inputs.attach-mode }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_PR: ${{ inputs.pr }}
+        INPUT_TELEMETRY: ${{ inputs.telemetry }}
         PROOFREEL_SERVICE_URL: ${{ inputs.service-url }}
       run: node "${{ github.action_path }}/dist/action.js"
     - name: Upload MP4 artifacts
