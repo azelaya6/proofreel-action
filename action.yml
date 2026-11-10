@@ -9,6 +9,14 @@ inputs:
     description: Spec slug(s) to record. Empty records every spec. Comma-separated slugs record that list. `auto` picks specs from the PR diff (see paths on each spec).
     required: false
     default: ""
+  coverage:
+    description: PR coverage mode override. `change-only`, `change-plus-regression`, or `all`. Empty uses `.proofreel/project.yml` on pull requests.
+    required: false
+    default: ""
+  regression:
+    description: Comma-separated regression spec slugs for this run (per-PR override). Used with change-plus-regression.
+    required: false
+    default: ""
   service-url:
     description: ProofReel hosted service. Set to "" to stay local (workflow artifact + comment from the workflow token).
     required: false
@@ -34,7 +42,7 @@ inputs:
     required: false
     default: ""
   telemetry:
-    description: 'Send a small scrubbed error report (stage, error class, truncated message, repo, run id, Action version, runner OS) to the ProofReel service when the Action hits an internal error, a setup problem or a failed upload. Uses the workflow''s OIDC token (`id-token: write`); no secrets, env, tokens, URL query strings or file contents. Set to "false" to opt out.'
+    description: 'On by default ("true"). Set to "false" to opt out. When enabled, sends a small scrubbed error report (stage, error class, truncated message, repo, run id, Action version, runner OS) to the ProofReel service when the Action hits an internal error, a setup problem or a failed upload. Uses the workflow''s OIDC token (`id-token: write`); no secrets, env, tokens, emails, URL query strings or file contents. Env `PROOFREEL_TELEMETRY=0` also opts out.'
     required: false
     default: "true"
 runs:
@@ -67,6 +75,8 @@ runs:
       working-directory: ${{ github.workspace }}
       env:
         INPUT_SPEC: ${{ inputs.spec }}
+        INPUT_COVERAGE: ${{ inputs.coverage }}
+        INPUT_REGRESSION: ${{ inputs.regression }}
         INPUT_SERVICE_URL: ${{ inputs.service-url }}
         INPUT_OIDC_AUDIENCE: ${{ inputs.oidc-audience }}
         INPUT_ATTACH_MODE: ${{ inputs.attach-mode }}

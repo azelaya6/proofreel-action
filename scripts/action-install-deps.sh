@@ -19,11 +19,27 @@ playwright_install() {
   fi
 }
 
+ensure_tesseract_spa() {
+  if need_cmd tesseract && tesseract --list-langs 2>/dev/null | grep -qx spa; then
+    return 0
+  fi
+  if [[ "$runner_os" == "Linux" ]]; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tesseract-ocr-spa \
+      || echo "::warning::Could not install tesseract-ocr-spa; Spanish OCR falls back to English only."
+    return 0
+  fi
+  if [[ "$runner_os" == "macOS" ]] && need_cmd brew; then
+    brew install tesseract-lang 2>/dev/null \
+      || echo "::warning::Could not install tesseract-lang; Spanish OCR falls back to English only."
+  fi
+}
+
 linux_install() {
   sudo apt-get update -qq
   playwright_install
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ffmpeg tesseract-ocr tesseract-ocr-eng xterm xvfb fonts-dejavu-core
+  ensure_tesseract_spa
 }
 
 post_runner_deps_comment() {
@@ -103,6 +119,7 @@ macos_install() {
 
   if [[ ${#missing[@]} -eq 0 ]]; then
     ensure_macos_ffmpeg_drawtext
+    ensure_tesseract_spa
     playwright_install
     return
   fi
@@ -122,6 +139,7 @@ macos_install() {
       exit 1
     fi
     ensure_macos_ffmpeg_drawtext
+    ensure_tesseract_spa
     if need_cmd ffmpeg && ! ffmpeg -hide_banner -filters 2>/dev/null | grep -q ' drawtext '; then
       echo "::error::ffmpeg on PATH does not include drawtext. On macOS run: brew install ffmpeg-full"
       exit 1

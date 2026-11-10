@@ -18,7 +18,7 @@ Use this skill when the task adds or changes any of:
 1. **`service-url`** — Default is `https://api.proofreel.dev`. Do not set it empty or point at a self-hosted URL; without the hosted service there is no recording pass and nothing is recorded.
 2. **`runs-on: ubuntu-latest`** — The Action needs apt packages (ffmpeg, tesseract, xvfb).
 3. **`permissions`** — Required block:
-   - `id-token: write` (OIDC; no secrets)
+   - `id-token: write` (OIDC for the recording pass; also signs scrubbed error telemetry, on by default — opt out with `telemetry: false`)
    - `contents: read`
    - `pull-requests: write` (fallback PR comment if the GitHub App is not installed)
 4. **Action version** — `uses: azelaya6/proofreel-action@v1`
@@ -60,7 +60,18 @@ jobs:
           spec: auto
 ```
 
-`spec: auto` records specs whose `paths:` globs match the pull request diff. Use a separate scheduled workflow with `spec: ""` to record every spec without running the full suite on each push.
+`spec: auto` records specs whose `paths:` globs match the pull request diff. Prefer **PR coverage** so unrelated passing specs are not treated as proof of the change:
+
+```yaml
+# .proofreel/project.yml
+version: 1
+prCoverage:
+  mode: change-only
+```
+
+Modes: `change-only` (diff-tied specs only), `change-plus-regression` (diff + explicit `regression:` slug list), `all` (full suite with separate **Change evidence** / **Regression checks** sections in the comment, labeled to PR HEAD). Override per workflow with `coverage:` and `regression:` inputs. Without `project.yml`, legacy `auto` still falls back to `always: true` smoke specs.
+
+Use a separate scheduled workflow with `spec: ""` to record every spec without running the full suite on each push (coverage defaults do not apply off `pull_request` unless you set `coverage:`).
 
 ## Spec shape
 
@@ -107,9 +118,9 @@ claims:
 
 Terminal claims use `run`, `pause`, and `expect.text` on terminal output instead of `goto`/`click`.
 
-Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks a small smoke spec when auto matches nothing else.
+Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks a small smoke spec when **legacy** auto matches nothing else (ignored when PR coverage is active — list smoke specs under `prCoverage.regression` instead).
 
-With no `spec` input, the Action records every spec. Use `spec: <slug>`, `spec: a,b`, or `spec: auto` on the Action step.
+With no `spec` input, the Action records every spec. Use `spec: <slug>`, `spec: a,b`, or `spec: auto` on the Action step. Dry-run selection: `proofreel select --spec auto --file path/to/changed.ts`.
 
 Full field and step reference: [ProofReel Action README](https://github.com/azelaya6/proofreel-action) (Spec reference section).
 

@@ -42,7 +42,7 @@ on:
   pull_request:
 
 permissions:
-  id-token: write       # lets the Action prove which repo it runs in (OIDC); no secrets needed. Also signs error reports (see Error telemetry)
+  id-token: write       # lets the Action prove which repo it runs in (OIDC); no secrets needed. Also signs error telemetry reports (see Error telemetry)
   contents: read
   pull-requests: write  # only used for the fallback comment if the app is not installed
 
@@ -74,7 +74,11 @@ ProofReel reads its config from the branch the pull request comes from. There ar
 | `proofreel.yml` at the repository root | The main config: one spec for the whole repo. |
 | `.proofreel/<slug>.yml` | Per-feature config: one spec per feature or PR. Any number of files. |
 
-With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` for one spec, `spec: slug-a,slug-b` for several, or `spec: auto` to record specs when the pull request touches a path listed in that spec's **`paths:`** globs (or edits that spec's file under `.proofreel/`). Specs without `paths:` are not selected by globs alone. When `auto` matches nothing, ProofReel records specs you edited under `.proofreel/`, then specs marked `always: true`, otherwise it passes without recording (see [Action inputs](#action-inputs)). Run a full suite on a schedule with an empty `spec` input instead of on every push.
+With no `spec` input the Action records every spec it finds (`proofreel.yml` plus each `.proofreel/*.yml` / `.yaml`). Set `spec: <slug>` for one spec, `spec: slug-a,slug-b` for several, or `spec: auto` to record specs when the pull request touches a path listed in that spec's **`paths:`** globs (or edits that spec's file under `.proofreel/`). Specs without `paths:` are not selected by globs alone.
+
+**PR coverage (recommended):** add `.proofreel/project.yml` so pull requests only record proof that belongs to the diff, with optional explicit regression specs. Coverage does not apply on `schedule` / `push` unless you set the `coverage` input — so a scheduled workflow can still use `spec: ""` for the full suite. See [PR coverage](#pr-coverage).
+
+Without PR coverage, when `auto` matches nothing, ProofReel records specs you edited under `.proofreel/`, then specs marked `always: true`, otherwise it passes without recording (legacy behavior). Run a full suite on a schedule with an empty `spec` input instead of on every push.
 
 ### Main config file
 
@@ -244,35 +248,86 @@ If you don't add `mark` steps, the key frames are set automatically: `before` af
 
 Videos are always uploaded as the `proofreel-videos` workflow artifact too.
 
-**Tip:** On pull requests use `spec: auto` so only affected specs record. Add a second workflow on `schedule` or `workflow_dispatch` with `spec: ""` to re-prove the full suite without queueing every spec on each push.
+**Tip:** On pull requests use `spec: auto` with PR coverage so only affected specs (plus any regression list you choose) record. Add a second workflow on `schedule` or `workflow_dispatch` with `spec: ""` to re-prove the full suite without queueing every spec on each push.
+
+## PR coverage
+
+Use **`.proofreel/project.yml`** for the repository default and the Action **`coverage`** / **`regression`** inputs for a one-off override on a single workflow run.
+
+| Mode | Records | Change vs regression in the PR comment |
+| --- | --- | --- |
+| `change-only` | Specs whose `paths:` (or spec file) match the PR diff only | No `always: true` smoke; if nothing matches, the run passes with a clear **no change-specific proof** notice |
+| `change-plus-regression` | Change-associated specs **plus** an explicit regression slug list | Regression clips are labeled separately and do **not** count as proof of the current diff |
+| `all` | Every spec | Specs tied to the PR diff appear under **Change evidence**; everything else under **Regression checks** |
+
+Each section is tied to **PR HEAD** (`pull_request.head.sha`). Passing regression specs never imply the current change is proven.
+
+**Repository default** (`.proofreel/project.yml`):
+
+```yaml
+version: 1
+prCoverage:
+  mode: change-only
+```
+
+**Change + explicit regression specs:**
+
+```yaml
+version: 1
+prCoverage:
+  mode: change-plus-regression
+  regression:
+    - checkout-smoke
+    - auth-smoke
+```
+
+**Per-PR workflow override:**
+
+```yaml
+      - uses: azelaya6/proofreel-action@v1
+        with:
+          spec: auto
+          coverage: change-plus-regression
+          regression: checkout-smoke,auth-smoke
+```
+
+**Migration:** Repositories with no `.proofreel/project.yml` keep today's `spec` behavior (`auto` still uses `always: true` when nothing matches). Adding `project.yml` opts pull requests into explicit coverage; scheduled jobs without `coverage:` stay on legacy `spec: ""` → all specs.
+
+**Deterministic change association:** only `paths:` globs and edits to the spec file under `.proofreel/` (not claim `sourceGlobs`). Unknown regression slugs and regression lists on `change-only` fail the run with a setup comment. Overlapping slugs are deduplicated.
+
+Dry-run locally: `npx proofreel select --spec auto --file src/foo.ts` (add `--coverage` / `--regression` to match the Action).
 
 ## Inputs
 
 | Input | Default | Meaning |
 | --- | --- | --- |
 | `spec` | `""` (all) | `""` records every spec. One slug records that spec. Comma-separated slugs record that list. `auto` picks specs from the PR diff using each spec's `paths:` (see above). |
+| `coverage` | `""` | On pull requests, overrides `.proofreel/project.yml`: `change-only`, `change-plus-regression`, or `all`. Empty uses the repo file when present; otherwise legacy `spec` behavior. |
+| `regression` | `""` | Comma-separated regression spec slugs for this run (requires `change-plus-regression`). Overrides the list in `project.yml`. |
 | `service-url` | `https://api.proofreel.dev` | Hosted service. It signs the recording pass for each run; without it nothing is recorded. |
 | `oidc-audience` | service-url | OIDC audience. Leave it unset. |
 | `attach-mode` | `auto` | Fallback comment media: `auto`, `gh-attach`, `gif-fallback`, `none`. |
 | `github-token` | `${{ github.token }}` | Used only for the fallback comment. |
 | `pr` | from event | Pull request number override. |
-| `telemetry` | `true` | Send a scrubbed error report to ProofReel when the Action hits an internal error, a setup problem or a failed upload. `false` opts out. See [Error telemetry](#error-telemetry). |
+| `telemetry` | `true` | **On by default.** Sends a scrubbed error report to ProofReel when the Action hits an internal error, a setup problem or a failed upload. Set `false` to opt out. See [Error telemetry](#error-telemetry).
 
 ## Error telemetry
 
-When the Action itself fails in your repository (an internal error, a setup problem such as a missing or invalid spec, or a failed upload), it sends **one small JSON report** to `https://api.proofreel.dev/v1/telemetry/action-error` so we can find and fix ProofReel bugs without you filing an issue. It is **on by default** and never changes your job's result.
-
-- **What is sent:** repository name, workflow run id and attempt, Action version, the stage that failed (`setup`, `session`, `record`, `verify`, `upload`, `publish`, `comment`, `internal`), the error class (or setup-problem kind), the first line of the error message (scrubbed, at most 300 characters), and the runner OS/arch.
-- **What is never sent:** secrets, environment variables, tokens, URL query strings or fragments, file or spec contents, stack traces, or your home directory name. The message is scrubbed on the runner with the same secret masks the Action uses for logs, and scrubbed again by the service.
-- **How it is authenticated:** with a short-lived GitHub Actions OIDC token (audience `proofreel-telemetry`), so it needs the same `permissions: id-token: write` the Action already uses. There is no API key or DSN in the Action. Without the permission the Action logs one line and sends nothing.
-- **Fire and forget:** short timeouts (a few seconds); a failed or slow report is ignored.
-- **Opt out:** set the input `telemetry: false` (or the env `PROOFREEL_TELEMETRY=0`). `service-url: ""` also sends nothing.
+Error telemetry is **on by default**. When the Action itself fails in your repository (an internal error, a setup problem such as a missing or invalid spec, or a failed upload) it sends **one small JSON report** to `https://api.proofreel.dev/v1/telemetry/action-error` so we can find and fix ProofReel bugs without you filing an issue. It never changes your job's result.
 
 ```yaml
       - uses: azelaya6/proofreel-action@v1
         with:
-          telemetry: false   # opt out of error reports
+          telemetry: false   # opt out of scrubbed error reports
 ```
+
+You can also opt out in the workflow env: `PROOFREEL_TELEMETRY=0` (or `false`, `no`, `off`).
+
+- **What is sent:** repository name, workflow run id and attempt, Action version, the stage that failed (`setup`, `session`, `record`, `verify`, `upload`, `publish`, `comment`, `internal`), the error class (or setup-problem kind), the first line of the error message (scrubbed, at most 300 characters), and the runner OS/arch.
+- **What is never sent:** secrets, environment variables, tokens, email addresses, URL query strings or fragments, file or spec contents, stack traces, or your user name from home paths (`/Users/…`, `/home/…`, `C:\Users\…`). `key=value` and `key: value` secrets such as `token`, `tok`, `secret`, `password`, `passwd` and `pwd` are redacted in any case. The message is scrubbed on the runner with the same secret masks the Action uses for logs, and scrubbed again by the service.
+- **How it is authenticated:** with a short-lived GitHub Actions OIDC token (audience `proofreel-telemetry`), so it needs the same `permissions: id-token: write` the Action already uses. The service only accepts the run named in that token. There is no API key or DSN in the Action. Without the permission the Action logs one line and sends nothing.
+- **Fire and forget:** short timeouts (a few seconds); a failed or slow report is ignored.
+- **Opt out:** with `telemetry: false` or `PROOFREEL_TELEMETRY=0` nothing is requested or sent. `service-url: ""` also sends nothing.
 
 Reports are kept for 90 days and rate-limited per repository. Questions: support@proofreel.dev.
 
