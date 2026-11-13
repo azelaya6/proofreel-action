@@ -34,13 +34,17 @@ inputs:
     required: false
     default: "false"
   github-token:
-    description: Token used only for the fallback comment when the service does not post one.
+    description: Token for the fallback PR comment when the service does not post one, and (on pull requests) to list changed files via the GitHub API when git cannot diff base...head — use actions/checkout with fetch-depth 0 when possible.
     required: false
     default: ${{ github.token }}
   pr:
     description: Pull request number override.
     required: false
     default: ""
+  on-setup-needed:
+    description: When recording was planned but no MP4 was stored, how the Video proof check concludes. `fail` (default), `action_required`, or `pass` (legacy green check).
+    required: false
+    default: fail
   telemetry:
     description: 'On by default ("true"). Set to "false" to opt out. When enabled, sends a small scrubbed error report (stage, error class, truncated message, repo, run id, Action version, runner OS) to the ProofReel service when the Action hits an internal error, a setup problem or a failed upload. Uses the workflow''s OIDC token (`id-token: write`); no secrets, env, tokens, emails, URL query strings or file contents. Env `PROOFREEL_TELEMETRY=0` also opts out.'
     required: false
@@ -62,14 +66,24 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: proofreel-playwright-${{ runner.os }}-${{ env.PROOFREEL_PW_VERSION }}
+        key: proofreel-playwright-${{ runner.os }}-${{ env.PROOFREEL_PW_VERSION }}-${{ env.PROOFREEL_PLAYWRIGHT_CACHE_KEY || 'chromium' }}
     - name: Install browser and media tools
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
+        INPUT_SPEC: ${{ inputs.spec }}
+        INPUT_COVERAGE: ${{ inputs.coverage }}
+        INPUT_REGRESSION: ${{ inputs.regression }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_PR: ${{ inputs.pr }}
-      run: bash "${{ github.action_path }}/scripts/action-install-deps.sh"
+      run: |
+        if [ -f "${{ github.workspace }}/scripts/plan-playwright-browsers.ts" ]; then
+          (
+            cd "${{ github.workspace }}"
+            npx --yes tsx scripts/plan-playwright-browsers.ts
+          )
+        fi
+        bash "${{ github.action_path }}/scripts/action-install-deps.sh"
     - name: Record, verify, publish
       shell: bash
       working-directory: ${{ github.workspace }}
@@ -82,6 +96,7 @@ runs:
         INPUT_ATTACH_MODE: ${{ inputs.attach-mode }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_PR: ${{ inputs.pr }}
+        INPUT_ON_SETUP_NEEDED: ${{ inputs.on-setup-needed }}
         INPUT_TELEMETRY: ${{ inputs.telemetry }}
         PROOFREEL_SERVICE_URL: ${{ inputs.service-url }}
       run: node "${{ github.action_path }}/dist/action.js"

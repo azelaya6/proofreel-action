@@ -11,11 +11,32 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+playwright_browsers() {
+  local raw="${PROOFREEL_PLAYWRIGHT_BROWSERS:-chromium}"
+  local IFS=,
+  local -a browsers=()
+  for part in $raw; do
+    part="${part//[[:space:]]/}"
+    if [[ "$part" == "chromium" || "$part" == "webkit" ]]; then
+      browsers+=("$part")
+    fi
+  done
+  if [[ ${#browsers[@]} -eq 0 ]]; then
+    browsers=(chromium)
+  fi
+  browsers+=(ffmpeg)
+  printf '%s\n' "${browsers[@]}"
+}
+
 playwright_install() {
+  local -a browsers=()
+  while IFS= read -r browser; do
+    browsers+=("$browser")
+  done < <(playwright_browsers | sort -u)
   if [[ "$runner_os" == "Linux" ]]; then
-    npx --no-install playwright install --with-deps chromium
+    npx --no-install playwright install --with-deps "${browsers[@]}"
   else
-    npx --no-install playwright install chromium
+    npx --no-install playwright install "${browsers[@]}"
   fi
 }
 

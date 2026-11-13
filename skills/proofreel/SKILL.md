@@ -73,6 +73,8 @@ Modes: `change-only` (diff-tied specs only), `change-plus-regression` (diff + ex
 
 Use a separate scheduled workflow with `spec: ""` to record every spec without running the full suite on each push (coverage defaults do not apply off `pull_request` unless you set `coverage:`).
 
+On pull requests, use **`actions/checkout` with `fetch-depth: 0`** so `git diff base...head` works. The Action `github-token` also lists PR files via the GitHub API when git cannot. If changed paths cannot be determined, the run **fails closed** (setup comment) instead of passing as “no specs changed”. **Fork PRs** and **`pull_request_target`** checkouts that use the base ref may not include new specs on the head branch — prefer `pull_request` on the head checkout when dogfooding new specs.
+
 ## Spec shape
 
 Config lives on the **PR branch** in either:
@@ -80,7 +82,7 @@ Config lives on the **PR branch** in either:
 | File | Purpose |
 | --- | --- |
 | `proofreel.yml` | One spec for the whole repository |
-| `.proofreel/<slug>.yml` | One spec per feature; output under `docs/videos/<slug>/` |
+| `.proofreel/<slug>.yml` or nested `.proofreel/**/<slug>.yml` | One spec per feature; output under `docs/videos/<slug>/` |
 
 Each file is a **complete** spec (no inheritance). Required top-level fields: `version: 1`, `name`, `slug`, `claims` (at least one claim).
 
@@ -117,6 +119,8 @@ claims:
 ```
 
 Terminal claims use `run`, `pause`, and `expect.text` on terminal output instead of `goto`/`click`.
+
+**Terminal demo discipline:** Chain commands with `set -euo pipefail` or `&&` so a success marker or `expect.text` line prints **only after every step succeeds**. A marker printed after a failed command can still appear on camera while verify fails the error guard. Use `expectFail: true` on a `run` step when the clip must deliberately show a failing command; use `allowErrors` when those patterns are expected. Non-zero exits fail recording unless `expectFail` is set.
 
 Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks a small smoke spec when **legacy** auto matches nothing else (ignored when PR coverage is active — list smoke specs under `prCoverage.regression` instead).
 

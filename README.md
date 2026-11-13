@@ -150,7 +150,9 @@ On the free plan a spec records up to 3 claims; Pro has no claim limit.
 
 ### Setup errors never turn the check red
 
-If the config is missing or wrong, ProofReel does not fail the job. Nothing is recorded or charged, the job exits 0 with a warning annotation, the **Video proof** check is green ("Video proof · ProofReel setup needed"), and the ProofReel PR comment (one comment, updated in place) says what is wrong, with copy-paste instructions:
+If the config is missing or wrong before anything was scheduled to record, ProofReel does not fail the job: nothing is recorded or charged, the **Video proof** check stays green, and the PR comment explains the fix.
+
+When specs **were** selected to record but nothing was stored (for example `baseUrl` never came up), the **Video proof** check is **not green** by default (`on-setup-needed: fail`). Use `on-setup-needed: pass` to restore legacy behaviour. The job still posts one PR comment with copy-paste instructions:
 
 | Problem | What the comment shows |
 | --- | --- |
@@ -164,7 +166,7 @@ The comment comes from the ProofReel app; if the app isn't installed, the Action
 
 ### When the check is red
 
-Failed frame checks turn the **Video proof** check red and fail the job: OCR didn't find the expected text, a key frame was black or blank, a key-like secret was visible, the video is older than the files it covers, or a claim has no video. Setup problems, the Pro limit and ProofReel errors never do. The PR comment says exactly what was missing.
+Failed frame checks turn the **Video proof** check red and fail the job: OCR didn't find the expected text, a key frame shows a disallowed error pattern (terminal recordings by default), a key frame was black or blank, a key-like secret was visible, the video is older than the files it covers, or a claim has no video. Setup problems, the Pro limit and ProofReel errors never do. The PR comment says exactly what was missing.
 
 A red check only blocks merging if you make **Video proof** a required check in branch protection.
 
@@ -224,7 +226,7 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 
 `wait.url` accepts an absolute `http(s)` URL, a Playwright glob (`**/dashboard`), or a **path-only / relative** value such as `/dashboard`. Path-only values resolve against the claim/spec `baseUrl` origin and match that pathname (query/hash ignored), so `wait: { url: /dashboard }` succeeds after navigation to `{baseUrl}/dashboard`.
 
-**Steps (terminal):** `run: <command>`, `env: {KEY: value}`, `pause: <ms>`, `mark: ...`.
+**Steps (terminal):** `run: <command>` (optional `expectFail: true` when the step must show a failure on camera), `env: {KEY: value}`, `pause: <ms>`, `mark: ...`. Use `set -e` or `&&` in demo scripts so success markers print only after every step succeeds. Optional claim fields: `allowErrors` (patterns that may appear), `errorGuard: false` to disable the default terminal error guard (browser: set `errorGuard: true` to fail on page errors or visible error text).
 
 If you don't add `mark` steps, the key frames are set automatically: `before` after the first `goto`, `action` at the first click or fill, and `after` at the end.
 
@@ -295,6 +297,10 @@ prCoverage:
 
 **Deterministic change association:** only `paths:` globs and edits to the spec file under `.proofreel/` (not claim `sourceGlobs`). Unknown regression slugs and regression lists on `change-only` fail the run with a setup comment. Overlapping slugs are deduplicated.
 
+**Spec layout:** place per-feature files under `.proofreel/` or nested folders (`.proofreel/auth/login.yml` and `.yaml` are loaded). `project.yml` / `project.yaml` are config only, not specs.
+
+**Changed files on pull requests:** ProofReel lists the PR diff with `git diff base...head` when `actions/checkout` has enough history, otherwise via the GitHub pull files API using the `github-token` input (same token as the fallback comment; needs `pull-requests: read`). **Recommend `fetch-depth: 0`** on checkout so git can always see the merge base. If neither git nor the API can determine changed paths, the run **fails closed** with setup instructions — it does not treat “unknown” as “nothing changed”. A real empty diff still passes green with **no specs selected** (nothing recorded or charged). **Fork PRs** and **`pull_request_target`** workflows that check out the base branch need extra care: specs added only on the head ref may not exist on the checkout; prefer `pull_request` with a normal checkout of the head ref.
+
 Dry-run locally: `npx proofreel select --spec auto --file src/foo.ts` (add `--coverage` / `--regression` to match the Action).
 
 ## Inputs
@@ -307,7 +313,7 @@ Dry-run locally: `npx proofreel select --spec auto --file src/foo.ts` (add `--co
 | `service-url` | `https://api.proofreel.dev` | Hosted service. It signs the recording pass for each run; without it nothing is recorded. |
 | `oidc-audience` | service-url | OIDC audience. Leave it unset. |
 | `attach-mode` | `auto` | Fallback comment media: `auto`, `gh-attach`, `gif-fallback`, `none`. |
-| `github-token` | `${{ github.token }}` | Used only for the fallback comment. |
+| `github-token` | `${{ github.token }}` | Fallback PR comment when the App does not post one; on pull requests also lists changed files via the GitHub API when git cannot diff `base...head`. Prefer `fetch-depth: 0` on checkout. |
 | `pr` | from event | Pull request number override. |
 | `telemetry` | `true` | **On by default.** Sends a scrubbed error report to ProofReel when the Action hits an internal error, a setup problem or a failed upload. Set `false` to opt out. See [Error telemetry](#error-telemetry).
 
