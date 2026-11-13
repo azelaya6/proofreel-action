@@ -29,7 +29,7 @@ Install the [ProofReel GitHub App](https://github.com/apps/proofreel/installatio
      `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
    - **Whole GitHub organization** ($69.99/month, every private repo under the org): org admin required; App installed on the org:
      `https://api.proofreel.dev/billing/checkout?scopeKind=org&scopeId=ORG`
-3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. See [Configure ProofReel](#configure-proofreel). If the spec is missing or invalid, the job stays green and the PR comment tells you exactly what to fix. Only failed frame checks turn the job and the **Video proof** check red.
+3. **Add a spec.** Put `proofreel.yml` at the repository root, or one `.proofreel/<slug>.yml` per feature, in the branch you open the PR from. See [Configure ProofReel](#configure-proofreel). With **no spec at all**, the job stays green and the **Video proof** check is **neutral** (not proof) while the PR comment explains how to start. With **PR coverage** (`change-only` / `change-plus-regression`), a spec this PR adds or edits must validate: the job **fails**, names every file and field error, and never shows green proof without an MP4. Other invalid specs you did not touch are ignored in change-only mode. Failed frame checks also turn the check red.
 4. **Add the workflow** below as `.github/workflows/proofreel.yml`.
 5. **Open a pull request.** The Action records each claim and checks the key frames, then the ProofReel app comments on the PR with the videos.
 
@@ -148,11 +148,13 @@ claims:
 
 On the free plan a spec records up to 3 claims; Pro has no claim limit.
 
-### Setup errors never turn the check red
+### Setup errors and the Video proof check
 
-If the config is missing or wrong before anything was scheduled to record, ProofReel does not fail the job: nothing is recorded or charged, the **Video proof** check stays green, and the PR comment explains the fix.
+If there is **no ProofReel config** in the branch, nothing is recorded or charged, the job exits 0, the **Video proof** check is **neutral** (`action_required`), and the PR comment has copy-paste setup steps — that is onboarding, not proof.
 
-When specs **were** selected to record but nothing was stored (for example `baseUrl` never came up), the **Video proof** check is **not green** by default (`on-setup-needed: fail`). Use `on-setup-needed: pass` to restore legacy behaviour. The job still posts one PR comment with copy-paste instructions:
+With **PR coverage**, a spec **this PR changed** that fails validation makes the job **fail** (`exit 1`) and the check **red**, listing each file and field (for example `mark` and `expect.at` must be `before`, `action`, or `after`). Green proof without a video is never shown.
+
+When valid specs **were** selected but nothing was stored (for example `baseUrl` never came up`), the **Video proof** check is **not green** by default (`on-setup-needed: fail`). Use `on-setup-needed: pass` to restore legacy behaviour. The job still posts one PR comment with copy-paste instructions:
 
 | Problem | What the comment shows |
 | --- | --- |
@@ -166,7 +168,7 @@ The comment comes from the ProofReel app; if the app isn't installed, the Action
 
 ### When the check is red
 
-Failed frame checks turn the **Video proof** check red and fail the job: OCR didn't find the expected text, a key frame shows a disallowed error pattern (terminal recordings by default), a key frame was black or blank, a key-like secret was visible, the video is older than the files it covers, or a claim has no video. Setup problems, the Pro limit and ProofReel errors never do. The PR comment says exactly what was missing.
+Failed frame checks turn the **Video proof** check red and fail the job: OCR didn't find the expected text, a key frame shows a disallowed error pattern (terminal recordings by default), a key frame was black or blank, a key-like secret was visible, the video is older than the files it covers, or a claim has no video. Invalid specs the PR changed under PR coverage, recorder failures with no MP4, and internal ProofReel errors also fail the job. The PR comment says exactly what was missing.
 
 A red check only blocks merging if you make **Video proof** a required check in branch protection.
 
@@ -183,7 +185,7 @@ Record against seeded or fixture data only, never production. The verifier fails
 
 ## Spec reference
 
-Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.yml` (see [Configure ProofReel](#configure-proofreel)). With no `spec` input, the Action records every spec it finds. A missing or invalid spec never fails the job (see [Setup errors](#setup-errors-never-turn-the-check-red)).
+Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.yml` (see [Configure ProofReel](#configure-proofreel)). With no `spec` input, the Action records every spec it finds. See [Setup errors and the Video proof check](#setup-errors-and-the-video-proof-check) for missing config, neutral checks, and change-only validation.
 
 **Top-level fields**
 
@@ -217,12 +219,16 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `steps` | The actions to perform (below). |
 | `expect.text` | Text that OCR must find in the key frame. |
 | `expect.locator` | A selector that must be visible at the end of the recording. |
+| `expect.nth` | Which match of `expect.locator` to check (default first). |
+| `expect.count`, `expect.min`, `expect.max` | Assert how many elements match `expect.locator` (exact `count` cannot mix with `min`/`max`). |
 | `expect.at` | Which key frame to check: `before`, `action`, or `after` (default `after`). |
 | `sourceGlobs` | Files the claim covers. Their hash is stored so `verify` can flag stale videos. |
 | `contexts` | Pro: two side-by-side browser contexts (`name`, `role: left/right`, `device`, `storageState`). Steps choose one with `context:`. |
 | `cwd`, `cols`, `rows` | Terminal claims: working directory and terminal size. |
 
-**Steps (browser):** `goto: /path`, `click: <selector>`, `fill: {locator, text}`, `type: {locator, text}` (types each key), `press: Enter` (optional `locator`), `hover: <selector>`, `wait: <selector>` or `wait: {locator, text, url, timeoutMs}`, `assert: {text, locator}`, `pause: <ms>` (max 12000), `mark: before|action|after`.
+**Steps (browser):** `goto: /path`, `click: <selector>` (or `{locator, text?, nth?}`), `fill: {locator, text}`, `type: {locator, text}` (types each key), `press: Enter` (optional `locator`), `hover: <selector>`, `wait: <selector>` or `wait: {locator, text, url, timeoutMs}`, `scroll: <selector>` or `scroll: {locator?, nth?, y?, hold?}` (scroll into view or wheel by pixels), `tour: {locator, hold?}` (reveal every match on camera), `assert: {text, locator, nth?, count?, min?, max?}`, `pause: <ms>` (max 12000), `mark: before|action|after`.
+
+**Prove every item you claim.** If the caption says "six images" or "three errors", do not rely on a single always-visible word for OCR. Assert the count (`assert: { locator, count: 6 }`), use `nth` on locators when you need a specific row, `scroll` or `tour` so each item appears in the video, and put `expect.text` on copy that only shows when the claim is true (for example the last panel's label). See `docs/how-to/prove-every-claimed-item.md` in the main repo.
 
 `wait.url` accepts an absolute `http(s)` URL, a Playwright glob (`**/dashboard`), or a **path-only / relative** value such as `/dashboard`. Path-only values resolve against the claim/spec `baseUrl` origin and match that pathname (query/hash ignored), so `wait: { url: /dashboard }` succeeds after navigation to `{baseUrl}/dashboard`.
 

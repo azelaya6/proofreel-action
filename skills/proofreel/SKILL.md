@@ -126,6 +126,8 @@ Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optio
 
 With no `spec` input, the Action records every spec. Use `spec: <slug>`, `spec: a,b`, or `spec: auto` on the Action step. Dry-run selection: `proofreel select --spec auto --file path/to/changed.ts`.
 
+When a caption mentions **how many** items (images, rows, errors), assert `count` (or `min`/`max`), use `tour` or `scroll` + `nth` so each appears on camera, and tie `expect.text` to copy that proves the claim — not a word that is always on screen. See the Action README “Prove every item you claim” paragraph.
+
 Full field and step reference: [ProofReel Action README](https://github.com/azelaya6/proofreel-action) (Spec reference section).
 
 ## Agent procedure
@@ -138,7 +140,7 @@ Full field and step reference: [ProofReel Action README](https://github.com/azel
    - Per repo: `https://api.proofreel.dev/billing/checkout?scopeKind=repo&scopeId=OWNER/REPO`
    - Per org: `https://api.proofreel.dev/billing/checkout?scopeKind=org&scopeId=ORG`
 
-Setup errors (missing spec, invalid YAML, app never answers at `baseUrl`) **do not** fail the job; the PR comment explains fixes. Only **failed frame checks** turn the **Video proof** check red.
+**No spec in the branch** → job exit 0, **neutral** Video proof check, setup comment (onboarding). **Invalid spec the PR changed** under PR coverage (`change-only` / `change-plus-regression`) → job **fails**, check **red**, every validation error in the log and comment (`mark` / `expect.at`: only `before`, `action`, `after`). Unchanged broken specs elsewhere are ignored in change-only mode. **Failed frame checks** also turn the check red.
 
 ## Optional local CLI
 
