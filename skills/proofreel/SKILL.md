@@ -26,6 +26,7 @@ Use this skill when the task adds or changes any of:
 6. **Selectors and OCR** — Prefer `data-testid` attributes. `expect.text` must appear visibly in the marked key frame (OCR reads the video). Use `expect.textAbsent` (string or list; OCR; browser claims also check the DOM) or `expect.notVisible` (browser locator/text, or a list of those) to prove something is gone.
 7. **Plan limits** — Public repos: free, watermarked, **≤ 3 claims per spec**. Private repos: **3 free watermarked proofs**, then **ProofReel Pro** ($9.99/month per repo or **$69.99/month org-wide**). Extra claims on the free tier are skipped, not failures.
 8. **YAML quoting** — Quote any scalar that contains `:` (for example captions or text with colons).
+9. **iPhone Safari** — For real iOS Safari behaviour (WebKit media, tap-gesture rules) set `browser: webkit` with `device: iphone-14` on the claim. A device preset alone still runs Chromium with a Safari userAgent. Firefox is not supported.
 
 ## GitHub Actions workflow (copy-paste)
 

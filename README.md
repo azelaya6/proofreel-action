@@ -227,7 +227,7 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `sourceGlobs` | Files the claim covers. Their hash is stored so `verify` can flag stale videos. |
 | `contexts` | Pro: two side-by-side browser contexts (`name`, `role: left/right`, `device`, `storageState`). Steps choose one with `context:`. |
 | `cwd`, `cols`, `rows` | Terminal claims: working directory and terminal size. |
-| `engine` | Playwright engine: `chromium` (default) or `webkit`. |
+| `browser` / `engine` | Playwright engine for browser claims: `chromium` (default) or `webkit` (iPhone Safari's engine). `browser` is an alias for `engine`; `chrome` and `safari` are accepted too. Set it on a claim, a context, or spec `defaults`. Pair `browser: webkit` with `device: iphone-14` to test iOS Safari behaviour such as tap-gesture-only audio. The Action plans the browsers your selected specs need, installs only those, and caches each browser under its own key (`proofreel-playwright-<os>-<arch>-<playwright>-chromium` / `-webkit`); a self-hosted runner that already has the browser on disk skips the restore. Firefox is not supported. |
 | `fakeMedia.audioFile` | Chromium only. Repo-relative `.wav` fed to `getUserMedia` as a fake microphone. Adds the Chromium fake-media launch flags and grants the microphone permission. |
 | `chromiumLaunchArgs` | Chromium only. Allowlisted fake-media flags (`--use-fake-ui-for-media-stream`, `--use-fake-device-for-media-stream`, `--use-file-for-fake-audio-capture=<repo-relative .wav>`). Prefer `fakeMedia`. Anything else is a spec error. |
 
