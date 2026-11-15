@@ -23,7 +23,7 @@ Use this skill when the task adds or changes any of:
    - `pull-requests: write` (fallback PR comment if the GitHub App is not installed)
 4. **Action version** — `uses: azelaya6/proofreel-action@v1`
 5. **Fixture data only** — Record against seeded or demo data. Never show production data, real customer records, or secrets on screen.
-6. **Selectors and OCR** — Prefer `data-testid` attributes. `expect.text` must appear visibly in the marked key frame (OCR reads the video). Use `expect.textAbsent` (OCR; browser claims also check the DOM) or `expect.notVisible` (browser locator/text) to prove something is gone.
+6. **Selectors and OCR** — Prefer `data-testid` attributes. `expect.text` must appear visibly in the marked key frame (OCR reads the video). Use `expect.textAbsent` (string or list; OCR; browser claims also check the DOM) or `expect.notVisible` (browser locator/text, or a list of those) to prove something is gone.
 7. **Plan limits** — Public repos: free, watermarked, **≤ 3 claims per spec**. Private repos: **3 free watermarked proofs**, then **ProofReel Pro** ($9.99/month per repo or **$69.99/month org-wide**). Extra claims on the free tier are skipped, not failures.
 8. **YAML quoting** — Quote any scalar that contains `:` (for example captions or text with colons).
 

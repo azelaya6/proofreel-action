@@ -219,7 +219,7 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `steps` | The actions to perform (below). |
 | `expect.text` | Text that OCR must find in the key frame. |
 | `expect.textAbsent` | Text (string or list) that OCR must **not** find in the key frame (`expect.at`, default `after`). Browser claims also check the DOM at the end of recording and on `assert` steps. Terminal claims use OCR only. |
-| `expect.notVisible` | Browser only. A selector, or `{ locator?: string, text?: string }`, that must **not** be visible at the end of recording (and on `assert` steps). Terminal claims should use `textAbsent`. |
+| `expect.notVisible` | Browser only. A selector, `{ locator?: string, text?: string }`, or a list of those, that must **not** be visible at the end of recording (and on `assert` steps). Every item is checked; a failure names the item that was still visible. Terminal claims should use `textAbsent`. |
 | `expect.locator` | A selector that must be visible at the end of the recording. |
 | `expect.nth` | Which match of `expect.locator` to check (default first). |
 | `expect.count`, `expect.min`, `expect.max` | Assert how many elements match `expect.locator` (exact `count` cannot mix with `min`/`max`). |
