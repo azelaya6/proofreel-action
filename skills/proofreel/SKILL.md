@@ -23,7 +23,7 @@ Use this skill when the task adds or changes any of:
    - `pull-requests: write` (fallback PR comment if the GitHub App is not installed)
 4. **Action version** — `uses: azelaya6/proofreel-action@v1`
 5. **Fixture data only** — Record against seeded or demo data. Never show production data, real customer records, or secrets on screen.
-6. **Selectors and OCR** — Prefer `data-testid` attributes. `expect.text` must appear visibly in the marked key frame (OCR reads the video).
+6. **Selectors and OCR** — Prefer `data-testid` attributes. `expect.text` must appear visibly in the marked key frame (OCR reads the video). Use `expect.textAbsent` (OCR; browser claims also check the DOM) or `expect.notVisible` (browser locator/text) to prove something is gone.
 7. **Plan limits** — Public repos: free, watermarked, **≤ 3 claims per spec**. Private repos: **3 free watermarked proofs**, then **ProofReel Pro** ($9.99/month per repo or **$69.99/month org-wide**). Extra claims on the free tier are skipped, not failures.
 8. **YAML quoting** — Quote any scalar that contains `:` (for example captions or text with colons).
 
@@ -118,7 +118,7 @@ claims:
       at: after
 ```
 
-Terminal claims use `run`, `pause`, and `expect.text` on terminal output instead of `goto`/`click`.
+Terminal claims use `run`, `pause`, and `expect.text` / `expect.textAbsent` on terminal output instead of `goto`/`click`. `expect.notVisible` with a locator is browser-only.
 
 **Terminal demo discipline:** Chain commands with `set -euo pipefail` or `&&` so a success marker or `expect.text` line prints **only after every step succeeds**. A marker printed after a failed command can still appear on camera while verify fails the error guard. Use `expect: { exitCode: N }` on a `run` step when that exact exit is required, or `expectFail: true` when the clip must show a failing command and any exit is acceptable; use `allowErrors` when those patterns are expected. Non-zero exits fail recording unless `expect.exitCode` or `expectFail` is set.
 

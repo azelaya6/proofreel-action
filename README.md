@@ -218,6 +218,8 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `device` | Overrides `defaults.device`. |
 | `steps` | The actions to perform (below). |
 | `expect.text` | Text that OCR must find in the key frame. |
+| `expect.textAbsent` | Text (string or list) that OCR must **not** find in the key frame (`expect.at`, default `after`). Browser claims also check the DOM at the end of recording and on `assert` steps. Terminal claims use OCR only. |
+| `expect.notVisible` | Browser only. A selector, or `{ locator?: string, text?: string }`, that must **not** be visible at the end of recording (and on `assert` steps). Terminal claims should use `textAbsent`. |
 | `expect.locator` | A selector that must be visible at the end of the recording. |
 | `expect.nth` | Which match of `expect.locator` to check (default first). |
 | `expect.count`, `expect.min`, `expect.max` | Assert how many elements match `expect.locator` (exact `count` cannot mix with `min`/`max`). |
@@ -229,7 +231,7 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `fakeMedia.audioFile` | Chromium only. Repo-relative `.wav` fed to `getUserMedia` as a fake microphone. Adds the Chromium fake-media launch flags and grants the microphone permission. |
 | `chromiumLaunchArgs` | Chromium only. Allowlisted fake-media flags (`--use-fake-ui-for-media-stream`, `--use-fake-device-for-media-stream`, `--use-file-for-fake-audio-capture=<repo-relative .wav>`). Prefer `fakeMedia`. Anything else is a spec error. |
 
-**Steps (browser):** `goto: /path`, `click: <selector>` (or `{locator, text?, nth?}`), `fill: {locator, text}`, `type: {locator, text}` (types each key), `press: Enter` (optional `locator`), `hover: <selector>`, `wait: <selector>` or `wait: {locator, text, url, timeoutMs}`, `scroll: <selector>` or `scroll: {locator?, nth?, y?, hold?}` (scroll into view or wheel by pixels), `tour: {locator, hold?}` (reveal every match on camera), `assert: {text, locator, nth?, count?, min?, max?}`, `pause: <ms>` (max 12000), `mark: before|action|after`.
+**Steps (browser):** `goto: /path`, `click: <selector>` (or `{locator, text?, nth?}`), `fill: {locator, text}`, `type: {locator, text}` (types each key), `press: Enter` (optional `locator`), `hover: <selector>`, `wait: <selector>` or `wait: {locator, text, url, timeoutMs}`, `scroll: <selector>` or `scroll: {locator?, nth?, y?, hold?}` (scroll into view or wheel by pixels), `tour: {locator, hold?}` (reveal every match on camera), `assert: {text, locator, nth?, count?, min?, max?, textAbsent?, notVisible?}`, `pause: <ms>` (max 12000), `mark: before|action|after`.
 
 **Prove every item you claim.** If the caption says "six images" or "three errors", do not rely on a single always-visible word for OCR. Assert the count (`assert: { locator, count: 6 }`), use `nth` on locators when you need a specific row, `scroll` or `tour` so each item appears in the video, and put `expect.text` on copy that only shows when the claim is true (for example the last panel's label). See `docs/how-to/prove-every-claimed-item.md` in the main repo.
 
