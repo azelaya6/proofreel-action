@@ -69,7 +69,7 @@ prCoverage:
   mode: change-only
 ```
 
-Modes: `change-only` (diff-tied specs only), `change-plus-regression` (diff + explicit `regression:` slug list), `all` (full suite with separate **Change evidence** / **Regression checks** sections in the comment, labeled to PR HEAD). Override per workflow with `coverage:` and `regression:` inputs. Without `project.yml`, legacy `auto` still falls back to `always: true` smoke specs.
+Modes: `change-only` (diff-tied specs only), `change-plus-regression` (diff + explicit `regression:` slug list), `all` (full suite with separate **Change evidence** / **Regression checks** sections in the comment, labeled to PR HEAD). Override per workflow with `coverage:` and `regression:` inputs. On pull requests with **no** `project.yml`, `spec: auto` defaults to **change-only plus `always: true` smoke** (smoke labeled separately, never change proof).
 
 Use a separate scheduled workflow with `spec: ""` to record every spec without running the full suite on each push (coverage defaults do not apply off `pull_request` unless you set `coverage:`).
 
@@ -122,7 +122,7 @@ Terminal claims use `run`, `pause`, and `expect.text` on terminal output instead
 
 **Terminal demo discipline:** Chain commands with `set -euo pipefail` or `&&` so a success marker or `expect.text` line prints **only after every step succeeds**. A marker printed after a failed command can still appear on camera while verify fails the error guard. Use `expectFail: true` on a `run` step when the clip must deliberately show a failing command; use `allowErrors` when those patterns are expected. Non-zero exits fail recording unless `expectFail` is set.
 
-Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks a small smoke spec when **legacy** auto matches nothing else (ignored when PR coverage is active — list smoke specs under `prCoverage.regression` instead).
+Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks smoke specs: they run with the **default PR** change-only mode (labeled smoke, not change proof). With explicit `project.yml` `change-only`, list smoke under `prCoverage.regression` in `change-plus-regression` instead.
 
 With no `spec` input, the Action records every spec. Use `spec: <slug>`, `spec: a,b`, or `spec: auto` on the Action step. Dry-run selection: `proofreel select --spec auto --file path/to/changed.ts`.
 

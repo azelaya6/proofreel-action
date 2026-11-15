@@ -225,6 +225,9 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 | `sourceGlobs` | Files the claim covers. Their hash is stored so `verify` can flag stale videos. |
 | `contexts` | Pro: two side-by-side browser contexts (`name`, `role: left/right`, `device`, `storageState`). Steps choose one with `context:`. |
 | `cwd`, `cols`, `rows` | Terminal claims: working directory and terminal size. |
+| `engine` | Playwright engine: `chromium` (default) or `webkit`. |
+| `fakeMedia.audioFile` | Chromium only. Repo-relative `.wav` fed to `getUserMedia` as a fake microphone. Adds the Chromium fake-media launch flags and grants the microphone permission. |
+| `chromiumLaunchArgs` | Chromium only. Allowlisted fake-media flags (`--use-fake-ui-for-media-stream`, `--use-fake-device-for-media-stream`, `--use-file-for-fake-audio-capture=<repo-relative .wav>`). Prefer `fakeMedia`. Anything else is a spec error. |
 
 **Steps (browser):** `goto: /path`, `click: <selector>` (or `{locator, text?, nth?}`), `fill: {locator, text}`, `type: {locator, text}` (types each key), `press: Enter` (optional `locator`), `hover: <selector>`, `wait: <selector>` or `wait: {locator, text, url, timeoutMs}`, `scroll: <selector>` or `scroll: {locator?, nth?, y?, hold?}` (scroll into view or wheel by pixels), `tour: {locator, hold?}` (reveal every match on camera), `assert: {text, locator, nth?, count?, min?, max?}`, `pause: <ms>` (max 12000), `mark: before|action|after`.
 
@@ -264,7 +267,7 @@ Use **`.proofreel/project.yml`** for the repository default and the Action **`co
 
 | Mode | Records | Change vs regression in the PR comment |
 | --- | --- | --- |
-| `change-only` | Specs whose `paths:` (or spec file) match the PR diff only | No `always: true` smoke; if nothing matches, the run passes with a clear **no change-specific proof** notice |
+| `change-only` | Specs whose `paths:` (or spec file) match the PR diff only | With `project.yml`, no automatic smoke. **Default on pull requests with no `project.yml`:** same change-only selection **plus** `always: true` smoke specs (labeled **smoke**, never change proof) |
 | `change-plus-regression` | Change-associated specs **plus** an explicit regression slug list | Regression clips are labeled separately and do **not** count as proof of the current diff |
 | `all` | Every spec | Specs tied to the PR diff appear under **Change evidence**; everything else under **Regression checks** |
 
@@ -299,7 +302,7 @@ prCoverage:
           regression: checkout-smoke,auth-smoke
 ```
 
-**Migration:** Repositories with no `.proofreel/project.yml` keep today's `spec` behavior (`auto` still uses `always: true` when nothing matches). Adding `project.yml` opts pull requests into explicit coverage; scheduled jobs without `coverage:` stay on legacy `spec: ""` → all specs.
+**Migration:** On **pull requests**, `spec: auto` with **no** `.proofreel/project.yml` now behaves like **`change-only` plus `always: true` smoke** (smoke clips are labeled separately and do not prove the diff). Scheduled, push, and `workflow_dispatch` runs with empty `spec` still record the full suite. Add `project.yml` to customize modes; smoke specs belong in `regression` for explicit `change-plus-regression`.
 
 **Deterministic change association:** only `paths:` globs and edits to the spec file under `.proofreel/` (not claim `sourceGlobs`). Unknown regression slugs and regression lists on `change-only` fail the run with a setup comment. Overlapping slugs are deduplicated.
 
@@ -314,7 +317,7 @@ Dry-run locally: `npx proofreel select --spec auto --file src/foo.ts` (add `--co
 | Input | Default | Meaning |
 | --- | --- | --- |
 | `spec` | `""` (all) | `""` records every spec. One slug records that spec. Comma-separated slugs record that list. `auto` picks specs from the PR diff using each spec's `paths:` (see above). |
-| `coverage` | `""` | On pull requests, overrides `.proofreel/project.yml`: `change-only`, `change-plus-regression`, or `all`. Empty uses the repo file when present; otherwise legacy `spec` behavior. |
+| `coverage` | `""` | On pull requests, overrides `.proofreel/project.yml`: `change-only`, `change-plus-regression`, or `all`. Empty uses the repo file when present; otherwise the PR default is change-only + smoke when `spec` is `auto`. |
 | `regression` | `""` | Comma-separated regression spec slugs for this run (requires `change-plus-regression`). Overrides the list in `project.yml`. |
 | `service-url` | `https://api.proofreel.dev` | Hosted service. It signs the recording pass for each run; without it nothing is recorded. |
 | `oidc-audience` | service-url | OIDC audience. Leave it unset. |
