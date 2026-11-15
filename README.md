@@ -235,7 +235,7 @@ Specs live in `proofreel.yml` at the repository root or in `.proofreel/<slug>.ym
 
 `wait.url` accepts an absolute `http(s)` URL, a Playwright glob (`**/dashboard`), or a **path-only / relative** value such as `/dashboard`. Path-only values resolve against the claim/spec `baseUrl` origin and match that pathname (query/hash ignored), so `wait: { url: /dashboard }` succeeds after navigation to `{baseUrl}/dashboard`.
 
-**Steps (terminal):** `run: <command>` (optional `expectFail: true` when the step must show a failure on camera), `env: {KEY: value}`, `pause: <ms>`, `mark: ...`. Use `set -e` or `&&` in demo scripts so success markers print only after every step succeeds. Optional claim fields: `allowErrors` (patterns that may appear), `errorGuard: false` to disable the default terminal error guard (browser: set `errorGuard: true` to fail on page errors or visible error text).
+**Steps (terminal):** `run: <command>` (optional `expect: { exitCode: N }` when that exact exit is required, or `expectFail: true` when any exit should be shown on camera), `env: {KEY: value}`, `pause: <ms>`, `mark: ...`. A non-zero exit fails the claim unless declared. Use `set -e` or `&&` in demo scripts so success markers print only after every step succeeds. Optional claim fields: `allowErrors` (patterns that may appear), `errorGuard: false` to disable the default terminal error guard (browser: set `errorGuard: true` to fail on page errors or visible error text).
 
 If you don't add `mark` steps, the key frames are set automatically: `before` after the first `goto`, `action` at the first click or fill, and `after` at the end.
 

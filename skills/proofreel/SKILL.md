@@ -120,7 +120,7 @@ claims:
 
 Terminal claims use `run`, `pause`, and `expect.text` on terminal output instead of `goto`/`click`.
 
-**Terminal demo discipline:** Chain commands with `set -euo pipefail` or `&&` so a success marker or `expect.text` line prints **only after every step succeeds**. A marker printed after a failed command can still appear on camera while verify fails the error guard. Use `expectFail: true` on a `run` step when the clip must deliberately show a failing command; use `allowErrors` when those patterns are expected. Non-zero exits fail recording unless `expectFail` is set.
+**Terminal demo discipline:** Chain commands with `set -euo pipefail` or `&&` so a success marker or `expect.text` line prints **only after every step succeeds**. A marker printed after a failed command can still appear on camera while verify fails the error guard. Use `expect: { exitCode: N }` on a `run` step when that exact exit is required, or `expectFail: true` when the clip must show a failing command and any exit is acceptable; use `allowErrors` when those patterns are expected. Non-zero exits fail recording unless `expect.exitCode` or `expectFail` is set.
 
 Add optional `paths:` (repo-relative globs) on each spec for `spec: auto`. Optional `always: true` marks smoke specs: they run with the **default PR** change-only mode (labeled smoke, not change proof). With explicit `project.yml` `change-only`, list smoke under `prCoverage.regression` in `change-plus-regression` instead.
 
